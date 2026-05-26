@@ -1,15 +1,16 @@
 #pragma once
 
-#include "adrr_IP.h"
-#include "adrr_MAC.h"
-#include "switch.h"
+#include "addr_IP.h"
+#include "addr_MAC.h"
 #include "packet.h"
+#include "switch.h"
+
 
 struct station {
     struct IPaddress ip;
     struct MACaddress mac;
     //struct MACaddress voisin;
-}
+};
 
 //void send_frame(struct eth_frame frame);
 //Envoie une trame ethernet

@@ -1,24 +1,24 @@
 #pragma once
 
-#include "adrr_IP.h"
-#include "adrr_MAC.h"
-#include "station.h"
+#include "addr_IP.h"
+#include "addr_MAC.h"
 #include "packet.h"
+#include "station.h"
 
 //#define SIZE_COMMUTATION_TABLE 128
 
 struct commutation {
-    struct MACaddress;
+    struct MACaddress mac;
     uint8_t port;
-}
+};
 
-struct switch {
+struct switch_t {
     struct MACaddress mac;
     uint8_t nbPorts;
     uint8_t priority;
     struct commutation **tableCommutation;
     struct BPDU bpdu;
-}
+};
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets

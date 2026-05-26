@@ -1,9 +1,8 @@
 #pragma once
 
-#include "adrr_IP.h"
-#include "adrr_MAC.h"
-#include "station.h"
-#include "switch.h"
+#include "addr_IP.h"
+#include "addr_MAC.h"
+
 
 struct eth_frame {
     uint8_t preambule[7];
@@ -14,13 +13,13 @@ struct eth_frame {
     uint8_t data[1500];
     uint8_t bourrage[46];
     uint8_t fcs[4];
-}
+};
 
 struct BPDU {
     struct MACaddress root; //addresse MAC du switch racine
     uint8_t cost; //coût pour atteindre la racine
     struct MACaddress bridge_id; //addresse MAC du port qui envoie le BPDU
-}
+};
 
 //void verif_type(*t);
 //fonction pour vérifier le type de la trame (Ethernet 2 ou IEEE 802.3)
