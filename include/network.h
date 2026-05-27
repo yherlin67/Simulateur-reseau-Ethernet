@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-
+#include <stdio.h>
 #include "station.h"
 #include "switch.h"
 #include "packet.h"

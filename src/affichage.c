@@ -11,5 +11,5 @@ void print_ip(uint32_t ip)
 // Affichage d'une adresse mac
 void print_mac(uint64_t mac){
     uint8_t octet_mask = 000011111111;
-    printf("%02X:%02X:%02X:%02X:%02X:%02X",(mac >> 40) & octet_mask,(mac >> 32) & octet_mask,(mac >> 24) & octet_mask,(mac >> 16) & octet_mask,mac >>  8) & octet_mask,(mac >>  0) & octet_mask);
+    printf("%02X:%02X:%02X:%02X:%02X:%02X",(mac >> 40) & octet_mask,(mac >> 32) & octet_mask,(mac >> 24) & octet_mask,(mac >> 16) & octet_mask,(mac >>  8) & octet_mask,(mac >>  0) & octet_mask);
 }

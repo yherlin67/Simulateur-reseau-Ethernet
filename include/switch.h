@@ -12,7 +12,7 @@
 struct commutation {
     uint64_t mac;
     struct port *port;
-}    
+};
 
 struct switch_t {
     uint_fast64_t mac;
