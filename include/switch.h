@@ -11,15 +11,15 @@
 
 struct commutation {
     uint64_t mac;
-    uint8_t port;
-};
+    struct port *port;
+}    
 
 struct switch_t {
     uint_fast64_t mac;
     uint8_t nbPorts;
-    struct port ports[MAX_PORTS];
+    struct port *ports[MAX_PORTS];
     uint8_t priority;
-    struct commutation **tableCommutation;
+    struct commutation tableCommutation[MAX_PORTS];
     struct BPDU bpdu;
 };
 

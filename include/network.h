@@ -17,7 +17,7 @@ enum role {
     LISTENING,
     FORWARDING,
     LEARNING,
-    DEFAULT
+    MODE_DEFAULT
 };
 
 struct port {
