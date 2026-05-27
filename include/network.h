@@ -6,12 +6,24 @@
 #include "switch.h"
 #include "packet.h"
 
+enum status {
+    ROOT,
+    DESIGNED,
+    BLOCKED,
+    DEFAULT
+};
+
+enum role {
+    LISTENING,
+    FORWARDING,
+    LEARNING,
+    DEFAULT
+};
+
 struct port {
-    struct switch_t *parent;
-    uint8_t num;  
-    char status; //R, D, B
-    char role; //Learning, Forwarding, Listening
-    struct lien *lien;
+    uint8_t num;
+    enum status s;  
+    enum role r;
 };
 
 struct lien {

@@ -4,6 +4,8 @@
 
 #include "packet.h"
 #include "station.h"
+#include "network.h"
+#define MAX_PORTS 32
 
 //#define SIZE_COMMUTATION_TABLE 128
 
@@ -15,6 +17,7 @@ struct commutation {
 struct switch_t {
     uint_fast64_t mac;
     uint8_t nbPorts;
+    struct port ports[MAX_PORTS];
     uint8_t priority;
     struct commutation **tableCommutation;
     struct BPDU bpdu;
