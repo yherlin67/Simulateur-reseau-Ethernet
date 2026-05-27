@@ -1,24 +1,22 @@
 #pragma once
+#include <stdint.h>
 
-#include "addr_IP.h"
-#include "addr_MAC.h"
-
-
-struct eth_frame {
-    uint8_t preambule[7];
-    uint8_t sfd;
-    struct MACaddress destination;
-    struct MACaddress source;
+// on peut faire un cast pour remplir automatiquement la structure avec les bons 
+struct __attribute__((packed)) eth_frame {
+    //uint8_t preambule[7];
+    //uint8_t sfd;
+    uint64_t destination; // adresse mac destination
+    uint64_t source; // adresse mac source
     uint8_t type[2];
     uint8_t data[1500];
     uint8_t bourrage[46];
-    uint8_t fcs[4];
+    //int8_t fcs[4];
 };
 
 struct BPDU {
-    struct MACaddress root; //addresse MAC du switch racine
+    uint64_t root; //addresse MAC du switch racine
     uint8_t cost; //coût pour atteindre la racine
-    struct MACaddress bridge_id; //addresse MAC du port qui envoie le BPDU
+    uint64_t bridge_id; //addresse MAC du port qui envoie le BPDU
 };
 
 //void verif_type(*t);

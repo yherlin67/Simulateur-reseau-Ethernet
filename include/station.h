@@ -1,14 +1,14 @@
 #pragma once
 
-#include "addr_IP.h"
-#include "addr_MAC.h"
+#include <stdint.h>
+
 #include "packet.h"
 #include "switch.h"
 
 
 struct station {
-    struct IPaddress ip;
-    struct MACaddress mac;
+    uint32_t ip;
+    uint64_t mac;
     //struct MACaddress voisin;
 };
 

@@ -1,19 +1,19 @@
 #pragma once
 
-#include "addr_IP.h"
-#include "addr_MAC.h"
+#include <stdint.h>
+
 #include "packet.h"
 #include "station.h"
 
 //#define SIZE_COMMUTATION_TABLE 128
 
 struct commutation {
-    struct MACaddress mac;
+    uint64_t mac;
     uint8_t port;
 };
 
 struct switch_t {
-    struct MACaddress mac;
+    uint_fast64_t mac;
     uint8_t nbPorts;
     uint8_t priority;
     struct commutation **tableCommutation;

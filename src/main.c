@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 //créer méthode convertir ip en binaire et MAC en binaire (pas de . ou de ; entre)

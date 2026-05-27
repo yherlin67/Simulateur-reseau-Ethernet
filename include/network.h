@@ -1,7 +1,7 @@
 #pragma once
 
-#include "addr_IP.h"
-#include "addr_MAC.h"
+#include <stdint.h>
+
 #include "station.h"
 #include "switch.h"
 #include "packet.h"
