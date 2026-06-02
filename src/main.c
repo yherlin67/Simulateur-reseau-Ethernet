@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "network.h"
 
 uint32_t convertirIP(const char *ipStr) {
     unsigned int octet1, octet2, octet3, octet4;
@@ -50,7 +51,7 @@ void afficherMACBinaire(uint64_t mac) {
 }
 
 
-void lireFichierConfiguration(const char *cheminFichier) {
+void lireFichierConfiguration(const char *cheminFichier, struct reseau *res) {
     FILE *fichier = fopen(cheminFichier, "r");
     
     if (fichier == NULL) {
@@ -68,6 +69,8 @@ void lireFichierConfiguration(const char *cheminFichier) {
     printf("================ EN-TÊTE ================\n");
     printf("Nombre d'equipements attendus : %d\n", nbEquipements);
     printf("Nombre de liens attendus       : %d\n\n", nbLiens);
+    res->nbLiens = nbLiens;
+    res->liens = malloc(nbLiens * sizeof(struct lien*));
 
     printf("============== ÉQUIPEMENTS ==============\n");
     for (int i = 0; i < nbEquipements; i++) {
@@ -118,6 +121,24 @@ void lireFichierConfiguration(const char *cheminFichier) {
 
             sscanf(ligne, "%d;%d;%d", &idEquipement1, &idEquipement2, &coutLien);
             printf("Lien n°%d : Equipement %d <---> Equipement %d (Cout: %d)\n", i + 1, idEquipement1, idEquipement2, coutLien);
+            res->liens[i] = malloc(sizeof(struct lien));
+            if (res->liens[i] == NULL) {
+                perror("Erreur allocation structure lien");
+                return; 
+            }
+
+            res->liens[i]->portA = malloc(sizeof(struct port));
+            res->liens[i]->portB = malloc(sizeof(struct port));
+
+            res->liens[i]->cost = (uint8_t)coutLien;
+            
+            res->liens[i]->portA->num = (uint8_t)idEquipement1;
+            res->liens[i]->portA->s = DEFAULT;
+            res->liens[i]->portA->r = MODE_DEFAULT;
+
+            res->liens[i]->portB->num = (uint8_t)idEquipement2;
+            res->liens[i]->portB->s = DEFAULT;
+            res->liens[i]->portB->r = MODE_DEFAULT;
         }
     }
 
@@ -126,7 +147,19 @@ void lireFichierConfiguration(const char *cheminFichier) {
 
 int main() {
     const char *chemin = "mylan_no_cycle.txt";
-    lireFichierConfiguration(chemin);
+    struct reseau res;
+
+    res.liens = NULL;
+    res.nbLiens = 0;
+
+    lireFichierConfiguration(chemin, &res);
+
+    for(size_t i = 0; i < res.nbLiens; i++) {
+        free(res.liens[i]->portA);
+        free(res.liens[i]->portB);
+        free(res.liens[i]);
+    }
+    free(res.liens);
     
     return 0;
 }
