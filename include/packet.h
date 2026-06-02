@@ -16,7 +16,8 @@ struct __attribute__((packed)) eth_frame {
 struct BPDU {
     uint64_t root; //addresse MAC du switch racine
     uint8_t cost; //coût pour atteindre la racine
-    uint64_t bridge_id; //addresse MAC du port qui envoie le BPDU
+    uint64_t bridge_id; //addresse MAC du switch qui envoie le BPDU
+    //uint8_t num_port;
 };
 
 //void verif_type(*t);
@@ -27,3 +28,4 @@ struct BPDU {
 //Dans cette trame, le champ qu'on appelle aujourd'hui "type" sur la trame Ethernet2 stockait la longueur 
 //des données inclues dans le paquet sur deux octets.
 //Le protocole utilisé se trouvait donc sur un autre champs (LLC) sur trois octets.
+//Ok enft 802.3 = BPDU

@@ -23,6 +23,8 @@ struct switch_t {
     struct BPDU bpdu;
 };
 
+void determine_type();
+
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets
 //Affiche un message du type: table mise à jour !
