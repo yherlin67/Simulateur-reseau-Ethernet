@@ -28,4 +28,4 @@ struct BPDU {
 //Dans cette trame, le champ qu'on appelle aujourd'hui "type" sur la trame Ethernet2 stockait la longueur 
 //des données inclues dans le paquet sur deux octets.
 //Le protocole utilisé se trouvait donc sur un autre champs (LLC) sur trois octets.
-//Ok enft 802.3 = BPDU
+//802.3 = BPDU

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "packet.h"
 #include "station.h"
@@ -8,6 +9,11 @@
 #define MAX_PORTS 32
 
 //#define SIZE_COMMUTATION_TABLE 128
+
+enum type {
+    IEEE802_3,
+    ETHERNET_II
+};
 
 struct commutation {
     uint64_t mac;
@@ -19,11 +25,15 @@ struct switch_t {
     uint8_t nbPorts;
     struct port *ports[MAX_PORTS];
     uint8_t priority;
-    struct commutation tableCommutation[MAX_PORTS];
+    struct commutation tableCommutation[32];
     struct BPDU bpdu;
 };
 
-void determine_type();
+enum type determine_type(struct switch_t, struct eth_frame);
+void know_station(struct switch_t switch_t, struct eth_frame frame);
+void receive_frame(struct switch_t switch_t, struct eth_frame frame);
+void send_to(int index, struct switch_t source, uint64_t station);
+
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets
@@ -35,4 +45,4 @@ void determine_type();
 
 //void send_BPDU(struct BPDU bpdu)
 //Envoie le vecteur BPDU du switch
-//Affiche un message du type: vecteur envoyé !
+//Affiche un message du type: vecteur envoye !
