@@ -30,15 +30,20 @@ void receive_frame(struct switch_t switch_t, struct eth_frame frame)
     }
 }
 
-void know_station(struct switch_t switch_t, struct eth_frame frame)
+void know_station(struct switch_t sw, struct eth_frame frame, struct network net)
 {
+    //IMPORTANT : i-ème port su switch = i-ème station du réseau !
     bool know = false;
     for(int i = 0; i < 32; i++)
     {
-        if(switch_t.tableCommutation[i].mac == frame.destination)
+        //memcmp ( const void * pointer1, const void * pointer2, size_t size )
+        //Compare le contenu de deux blocs mémoires octets par octets sur une taille de size
+        //Si ca renvoie autre chose que 0 : les octets diffèrent
+        if(memcmp(&sw.tableCommutation[i]->mac, &frame.destination, 6) == 0)
         {
-            printf("Le switch connaît la station de destination, on peut envoyer la trame !");
-            send_to(i, switch_t, frame.destination);
+            //On récup le numéro de port = numéro de la station
+            uint8_t num_port = sw.tableCommutation[i]->port; 
+            send_to(num_port, frame, net);  // envoie sur ce port
             know = true;
         }
     }
@@ -46,16 +51,25 @@ void know_station(struct switch_t switch_t, struct eth_frame frame)
     {
         printf("Le switch ne connaît pas la station de destination, envoyons la trame à tout le monde !");
         {
-            send_to(-1, switch_t ,0x0000FFFFFFFFFFFF);
+            //Broadcast
+            send_to(-1, frame, net);
         }
     }
 }
 
-void send_to(int index, struct switch_t source, uint64_t destination)
+void send_to(int8_t num_port, struct eth_frame frame, struct network net)
 {
-    //je sais quoi faire à peu près
-    //gérer si dest = broadcast
-    //Boucle de i = 0 à nbPorts
-    //si i = index c la source donc on renvoit pas
-    //sinon ben on envoie à port 1, 2, 3 ...
+    if(num_port == -1)
+    {
+        // Broadcast, envoie à toutes les stations
+        for(int i = 0; i < net.nbStations; i++)
+        {
+            receive_frame_st(net.stations[i], frame);
+        }
+    }
+    else
+    {
+        // Envoie uniquement à la station connectée sur ce port
+        receive_frame_st(net.stations[num_port], frame);
+    }
 }

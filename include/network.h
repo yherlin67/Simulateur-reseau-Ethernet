@@ -26,17 +26,17 @@ struct port {
     enum role r;
 };
 
-struct lien {
+struct link {
     uint8_t cost;
     struct port *portA;
     struct port *portB;
 };
 
-struct reseau {
+struct network {
     size_t nbStations;
     size_t nbSwitchs;
-    struct station **stations;
-    struct switch_t **switchs;
+    struct station *stations[32];
+    struct switch_t *switchs[32];
     size_t nbLiens;
     struct lien **liens;
 };

@@ -25,15 +25,14 @@ struct switch_t {
     uint8_t nbPorts;
     struct port *ports[MAX_PORTS];
     uint8_t priority;
-    struct commutation tableCommutation[32];
+    struct commutation *tableCommutation[32];
     struct BPDU bpdu;
 };
 
-enum type determine_type(struct switch_t, struct eth_frame);
-void know_station(struct switch_t switch_t, struct eth_frame frame);
-void receive_frame(struct switch_t switch_t, struct eth_frame frame);
-void send_to(int index, struct switch_t source, uint64_t station);
-
+enum type determine_type(struct eth_frame);
+void send_to(int8_t num_port, struct eth_frame frame, struct network net);
+void know_station(struct switch_t sw, struct eth_frame frame, struct network net);
+void receive_frame_sw(struct switch_t switch_t, struct eth_frame frame);
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets

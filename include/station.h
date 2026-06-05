@@ -12,6 +12,8 @@ struct station {
     //struct MACaddress voisin;
 };
 
+void receive_frame_st(struct station *st, struct eth_frame frame);
+
 //void send_frame(struct eth_frame frame);
 //Envoie une trame ethernet
 //Affiche un message du type : trame envoyée !
