@@ -6,31 +6,46 @@
 #include "switch.h"
 #include "packet.h"
 
-enum status {
+enum port_status {
     ROOT,
     DESIGNED,
     BLOCKED,
     DEFAULT
 };
 
-enum role {
+enum port_role {
     LISTENING,
     FORWARDING,
     LEARNING,
     MODE_DEFAULT
 };
 
-struct port {
-    uint8_t num;
-    enum status s;  
-    enum role r;
+enum device_type {
+    STATION,
+    SWITCH
 };
 
-struct link {
+struct port {
+    //Un port dans le tableau ports d'un switch est forcément connecté à ce switch, et un des deux autres appareils dans l'union
+    //Un port en attribut d'une station est forcément connecté à cette station et un des deux autres appareils dans l'union
+    //Il n'y a plus besoin de struct lien, cost represente le cout pour atteindre le port
+    uint8_t num;
     uint8_t cost;
-    struct port *portA;
-    struct port *portB;
+    enum port_status status;
+    enum port_role role ;
+    enum device_type type;
+    // l'équipement connecté sous forme de union = station ou switch
+    union {
+        struct station *station;
+        struct switch_t *switch_t;
+    } equipment;  
 };
+
+// struct link {
+//     uint8_t cost;
+//     struct port *portA;
+//     struct port *portB;
+// };
 
 struct network {
     size_t nbStations;

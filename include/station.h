@@ -9,10 +9,11 @@
 struct station {
     uint32_t ip;
     uint64_t mac;
+    struct port *p;
     //struct MACaddress voisin;
 };
 
-void receive_frame_st(struct station *st, struct eth_frame frame);
+void receive_frame(struct station *st, struct eth_frame *frame, uint8_t num_port);
 
 //void send_frame(struct eth_frame frame);
 //Envoie une trame ethernet

@@ -30,9 +30,10 @@ struct switch_t {
 };
 
 enum type determine_type(struct eth_frame);
-void send_to(int8_t num_port, struct eth_frame frame, struct network net);
-void know_station(struct switch_t sw, struct eth_frame frame, struct network net);
-void receive_frame_sw(struct switch_t switch_t, struct eth_frame frame);
+void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port);
+void know_station(struct switch_t *sw, struct eth_frame *frame);
+void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port);
+void process_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port);
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets
