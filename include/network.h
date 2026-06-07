@@ -6,20 +6,24 @@
 #include "switch.h"
 #include "packet.h"
 
+#define MAX_DEVICES 64
+
 enum port_status {
-    ROOT,
-    DESIGNED,
-    BLOCKED,
-    DEFAULT
+    ROOT, // chemin le plus court vers la racine
+    DESIGNED, // retransmet les BPDU vers les segments
+    BLOCKED, // coupe un cycle
+    DEFAULT // état initial
 };
 
+/*Pour l'instant on en a pas besoin...
 enum port_role {
-    LISTENING,
-    FORWARDING,
-    LEARNING,
-    MODE_DEFAULT
+    LISTENING, 
+    FORWARDING, 
+    LEARNING, 
+    MODE_DEFAULT 
 };
-
+*/
+// type de voisin connecté sur un port
 enum device_type {
     STATION,
     SWITCH
@@ -41,20 +45,22 @@ struct port {
     } equipment;  
 };
 
-// struct link {
-//     uint8_t cost;
-//     struct port *portA;
-//     struct port *portB;
-// };
+struct link {
+   uint8_t cost;
+   struct port *portA;
+   struct port *portB;
+};
 
 struct network {
-    size_t nbStations;
-    size_t nbSwitchs;
-    struct station *stations[32];
-    struct switch_t *switchs[32];
+    size_t nb_stations;
+    size_t nb_switchs;
+    struct station *stations[MAX_DEVICES];
+    struct switch_t *switchs[MAX_DEVICES];
     size_t nbLiens;
     struct lien **liens;
 };
+
+void ReadFile(const char *pathFile, struct network *res);
 
 //void read_conf(FILE * configurationFile)
 //Lit le fichier de configuration et pratique les échanges dans le réseau

@@ -1,6 +1,6 @@
 #include "switch.h"
 
-enum type determine_type(struct eth_frame frame)
+enum frame_type determine_type(struct eth_frame frame)
 {
     uint16_t type = (frame.type[0] << 8) | frame.type[1];
 
@@ -9,17 +9,16 @@ enum type determine_type(struct eth_frame frame)
         printf("IEEE 802.3 - longueur: %u octets\n", type);
         return IEEE802_3;
     }
-    else
-    {
-        printf("Ethernet II - protocole: 0x%04x\n", type);
-        return ETHERNET_II;
-    }
+
+    printf("Ethernet II - protocole: 0x%04x\n", type);
+    return ETHERNET_II;
+
 }
 
 void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port)
 {
     //num_port représente le numéro du port sur lequel la trame a été reçue
-    enum type type = determine_type(*frame);
+    enum frame_type type = determine_type(*frame);
 
     if(type == IEEE802_3)
     {

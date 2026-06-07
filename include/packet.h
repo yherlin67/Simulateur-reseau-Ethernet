@@ -13,6 +13,11 @@ struct __attribute__((packed)) eth_frame {
     //int8_t fcs[4];
 };
 
+enum frame_type {
+    IEEE802_3,
+    ETHERNET_II
+};
+
 struct BPDU {
     uint64_t root; //addresse MAC du switch racine
     uint8_t cost; //coût pour atteindre la racine

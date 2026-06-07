@@ -13,6 +13,8 @@ struct station {
     //struct MACaddress voisin;
 };
 
+void station_send(struct station *src, mac_t dst_mac, const char *message);
+
 void receive_frame(struct station *st, struct eth_frame *frame, uint8_t num_port);
 
 //void send_frame(struct eth_frame frame);

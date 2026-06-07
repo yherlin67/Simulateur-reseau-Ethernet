@@ -6,16 +6,13 @@
 #include "packet.h"
 #include "station.h"
 #include "network.h"
+
 #define MAX_PORTS 32
 
 //#define SIZE_COMMUTATION_TABLE 128
 
-enum type {
-    IEEE802_3,
-    ETHERNET_II
-};
 
-struct commutation {
+struct commutation_entry {
     uint64_t mac;
     struct port *port;
 };
@@ -25,11 +22,11 @@ struct switch_t {
     uint8_t nbPorts;
     struct port *ports[MAX_PORTS];
     uint8_t priority;
-    struct commutation *tableCommutation[32];
+    struct commutation *tableCommutation[32];s
     struct BPDU bpdu;
 };
 
-enum type determine_type(struct eth_frame);
+enum frame_type determine_type(struct eth_frame);
 void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port);
 void know_station(struct switch_t *sw, struct eth_frame *frame);
 void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port);
