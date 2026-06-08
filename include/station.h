@@ -4,6 +4,8 @@
 
 #include "packet.h"
 #include "switch.h"
+#include "network.h"
+#include "scheduler.h"
 
 
 struct station {
@@ -13,7 +15,8 @@ struct station {
     //struct MACaddress voisin;
 };
 
-void station_send(struct station *src, mac_t dst_mac, const char *message);
+
+void station_send(struct station *src, struct station *dst, const char *message, struct scheduler *sched, struct network *net);
 
 void receive_frame(struct station *st, struct eth_frame *frame, uint8_t num_port);
 

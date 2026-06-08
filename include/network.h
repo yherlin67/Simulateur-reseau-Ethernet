@@ -29,6 +29,15 @@ enum device_type {
     SWITCH
 };
 
+// union switch ou station => définie ici avec un nom de type pour pouvoir être réutilisée dans struct port ET dans struct node_frame du scheduler 
+
+union equipment_union {          
+    struct station  *st;
+    struct switch *sw;
+};
+
+
+
 struct port {
     //Un port dans le tableau ports d'un switch est forcément connecté à ce switch, et un des deux autres appareils dans l'union
     //Un port en attribut d'une station est forcément connecté à cette station et un des deux autres appareils dans l'union
@@ -39,10 +48,7 @@ struct port {
     enum port_role role ;
     enum device_type type;
     // l'équipement connecté sous forme de union = station ou switch
-    union {
-        struct station *station;
-        struct switch_t *switch_t;
-    } equipment;  
+    equipment_union equipment;
 };
 
 struct link {
@@ -64,6 +70,12 @@ void ReadFile(const char *pathFile, struct network *res);
 
 //void read_conf(FILE * configurationFile)
 //Lit le fichier de configuration et pratique les échanges dans le réseau
+
+// Chargement depuis fichier de config
+//struct network *load_network(const char *path);
+//void free_network(struct network *net);
+//void print_network(struct network *net);
+
 
 //void run_STP(FILE * configurationFile)
 //Lance STP dans le réseau
