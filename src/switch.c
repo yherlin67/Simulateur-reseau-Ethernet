@@ -1,5 +1,7 @@
 #include "switch.h"
 
+static bool stp_running = true;
+
 enum frame_type determine_type(struct eth_frame frame)
 {
     uint16_t type = (frame.type[0] << 8) | frame.type[1];
@@ -25,7 +27,10 @@ void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_por
         // Les données contiennent un BPDU
         //J'interprète un tableau d'ocets en mémoire comme une structure
         struct BPDU *bpdu = (struct BPDU *)frame->data;
-        process_bpdu(sw, bpdu, num_port);
+        if(!update_bpdu(sw,bpdu))
+        {
+            stp_running = false;
+        }
     }
     else if(type == ETHERNET_II)
     {
@@ -99,16 +104,11 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
     }
 }
 
-void process_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
+void propagate_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
 {
     //num_port = port sur lequel on a reçu le BPDU
     // Si la racine du BPDU est plus petite que la nôtre
-    if(bpdu->root < sw->bpdu.root)
-    {
-        sw->bpdu.root = bpdu->root;          //on met à jour la racine
-        sw->bpdu.cost = bpdu->cost + 1;      //on incrémente le coût
-        sw->bpdu.bridge_id = sw->mac;        //on est le switch qui propage
-    }
+    
 
     //Construction de la trame à envoyer
 
@@ -129,4 +129,73 @@ void process_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
 
     //On libère la trame après envoie
     free(new_frame);
+}
+
+void propagate_bpdu(struct network *net)
+{
+    bool changed = true;
+    while(changed)
+    {
+        changed = false;
+        //Pour chaque switch du réseau
+        for(int i = 0; i < net->nb_switchs; i++)
+        {
+            struct switch_t *switch_actuel = net->switchs[i];
+            //Pour chaque port du switch
+            for(int i = 0; i < switch_actuel->nbPorts; i++)
+            {
+                struct port *pt = switch_actuel->ports[i];
+                //On envoie le BPDU que sur des ports qui correspondent à des switchs
+                if (pt->type == SWITCH)
+                {
+                    //Construction du BPDU à envoyer sur ce port
+                    struct BPDU *bpdu_to_send = malloc(sizeof(struct BPDU));
+                    bpdu_to_send->root = switch_actuel->bpdu->root;
+                    bpdu_to_send->cost = switch_actuel->bpdu->cost;
+                    bpdu_to_send->bridge_id = switch_actuel->bpdu->bridge_id;
+                    bpdu_to_send->num_port = pt->num;
+
+                    //Encapsulation du BPDU dans une trame Ethernet
+                    struct eth_frame *new_frame = malloc(sizeof(struct eth_frame));
+                    new_frame->destination = pt->equipment.switch_t->mac; //MAC du switch voisin
+                    new_frame->source = switch_actuel->mac; //MAC du switch actuel
+                    //Longueur des données
+                    new_frame->type[0] = 0x00; 
+                    new_frame->type[1] = sizeof(struct BPDU);
+                    //On copie le BPDU dans les données de la trame
+                    memcpy(new_frame->data, bpdu_to_send, sizeof(struct BPDU));
+
+                    addToList(new_frame);
+
+                }
+                else
+                {
+                    continue;
+                }
+                
+            }
+        }
+    }
+    
+}
+
+bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu)
+{
+    if(bpdu->root < sw->bpdu->root)
+    {
+        sw->bpdu->root = bpdu->root;          //on met à jour la racine
+        sw->bpdu->cost = bpdu->cost + 1;      //on incrémente le coût
+        sw->bpdu->bridge_id = sw->mac;        //on est le switch qui propage
+        return true;
+    }
+    return false;
+}
+
+void assign_ports(struct network *net)
+{
+    //Parcours des switchs du réseau
+    for(int i = 0; i < net->nb_switchs; i++)
+    {
+        struct switch_t *switch_actuel = net->switchs[i];
+    }
 }
