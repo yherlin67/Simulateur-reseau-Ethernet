@@ -38,7 +38,7 @@ void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_por
     }
 }
 
-void know_station(struct switch_t *sw, struct eth_frame *frame)
+void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port)
 {
     //IMPORTANT : i-ème port su switch = relié à la i-ème station du réseau !
     bool know = false;
@@ -57,12 +57,21 @@ void know_station(struct switch_t *sw, struct eth_frame *frame)
     }
     if(!know)
     {
-        printf("Le switch ne connaît pas la station de destination, envoyons la trame à tout le monde !");
+        //Le switch ne connaît pas la station de destination, envoyons la trame à tout le monde !;
         {
+            update_table(sw, num_port, frame);
             //Broadcast
             send_to(frame, sw, -1);
         }
     }
+}
+
+void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame)
+{
+    struct commutation_entry *commut = malloc(sizeof(struct commutation_entry));
+    commut->mac = frame->source;
+    commut->port = sw->ports[num_port];
+    sw->tableCommutation[num_port] = commut;
 }
 
 void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
@@ -104,33 +113,6 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
     }
 }
 
-void propagate_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
-{
-    //num_port = port sur lequel on a reçu le BPDU
-    // Si la racine du BPDU est plus petite que la nôtre
-    
-
-    //Construction de la trame à envoyer
-
-    struct eth_frame *new_frame = malloc(sizeof(struct eth_frame));
-    //...
-
-    for(int i = 0; i < sw->nbPorts; i++)
-    {
-        if(i == num_port || sw->ports[i]->status == BLOCKED)
-        {
-            continue;
-        }
-        else
-        {
-           receive_frame(sw->ports[i]->equipment.switch_t, new_frame, i);
-        }
-    }
-
-    //On libère la trame après envoie
-    free(new_frame);
-}
-
 void propagate_bpdu(struct network *net)
 {
     bool changed = true;
@@ -165,7 +147,7 @@ void propagate_bpdu(struct network *net)
                     //On copie le BPDU dans les données de la trame
                     memcpy(new_frame->data, bpdu_to_send, sizeof(struct BPDU));
 
-                    addToList(new_frame);
+                    scheduler_push(sced, new_frame,switch_actuel, pt->equipment.switch_t, pt->num);
 
                 }
                 else
@@ -191,11 +173,45 @@ bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu)
     return false;
 }
 
-void assign_ports(struct network *net)
+void search_root(struct network *net)
 {
+    uint8_t racine;
     //Parcours des switchs du réseau
     for(int i = 0; i < net->nb_switchs; i++)
     {
         struct switch_t *switch_actuel = net->switchs[i];
+        if(switch_actuel->mac == switch_actuel->bpdu->root)
+        {
+            //On a trouvé la racine !
+            racine = i;
+            break;
+        }
     }
+    struct switch_t *switch_racine;
+    
+    set_roots_ports(switch_racine);   
+
+}
+
+void set_roots_ports(struct switch_t * switch_racine)
+{
+    for(int j = 0; j < switch_racine->nbPorts; j++)
+    {
+        if(switch_racine->ports[j]->type == SWITCH)
+        {
+            struct port *p = switch_racine->ports[j];
+            p->status = ROOT;
+            struct switch_t *switch_passerelle = p->equipment.switch_t;
+            for(int k = 0; k < switch_passerelle->nbPorts; k++)
+            {
+                if(switch_passerelle->ports[k]->status != ROOT)
+                {
+                    switch_passerelle->ports[k]->status = DESIGNED;
+                    
+                }
+            }
+            set_roots_ports(switch_passerelle);
+        }
+    }
+    
 }
