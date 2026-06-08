@@ -15,14 +15,6 @@ enum port_status {
     DEFAULT // état initial
 };
 
-/*Pour l'instant on en a pas besoin...
-enum port_role {
-    LISTENING, 
-    FORWARDING, 
-    LEARNING, 
-    MODE_DEFAULT 
-};
-*/
 // type de voisin connecté sur un port
 enum device_type {
     STATION,
@@ -33,7 +25,7 @@ enum device_type {
 
 union equipment_union {          
     struct station  *st;
-    struct switch *sw;
+    struct switch_t *sw;
 };
 
 
