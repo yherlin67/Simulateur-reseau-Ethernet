@@ -10,7 +10,7 @@
 
 enum port_status {
     ROOT, // chemin le plus court vers la racine
-    DESIGNED, // retransmet les BPDU vers les segments
+    DESIGNATED, // retransmet les BPDU vers les segments
     BLOCKED, // coupe un cycle
     DEFAULT // état initial
 };
