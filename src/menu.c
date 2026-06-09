@@ -5,6 +5,8 @@
 #include "network.h"
 #include "utils.h"
 
+extern void print_network(struct network *net);
+
 void displayMenu(struct network *net) 
 {
     char userCommand = '\0';

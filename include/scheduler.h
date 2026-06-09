@@ -43,7 +43,7 @@ void scheduler_push(struct scheduler *s, struct eth_frame *frame, enum device_ty
 //Retire et retourne le nœud en tête de file.
 //Retourne NULL si la file est vide.
 // IMPORTANT : l'appelant doit free() le nœud après usage !!!!
-struct frame_node *scheduler_pop(struct scheduler *s);
+struct node_frame *scheduler_pop(struct scheduler *s);
 
 //Traite UN tick : envoie toutes les trames présentes AU DÉBUT du tick.
 // Les nouvelles trames générées pendant le tick attendent le tick suivant.

@@ -5,20 +5,19 @@
 #include "network.h"
 #include "switch.h"
 
-void sendFrame(char message) {
-    // À implémenter
-}
+extern void displayMenu(struct network *net);
+extern void free_network(struct network *net);
 
 int main() {
     const char *chemin = "mylan_no_cycle.txt";
     
     struct network res;
+    memset(&res, 0, sizeof(res));
 
     // 1. On charge le réseau
     ReadFile(chemin, &res);
 
     // 2. On lance le menu en lui donnant accès au réseau chargé
-    extern void displayMenu(struct network *net);
     displayMenu(&res);
 
     // 3. Libération mémoire à la fermeture du menu

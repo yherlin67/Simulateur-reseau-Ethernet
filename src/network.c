@@ -17,16 +17,14 @@ struct raw_link {
 static struct raw_link *saved_raw_links = NULL;
 static int saved_nb_eq = 0;
 
-/* ============================================================
- * MÉTHODES DE CRÉATION ET D'ALLOCATION
- * ============================================================ */
-
 static struct switch_t *make_switch(uint64_t mac, uint8_t priority) {
     struct switch_t *sw = calloc(1, sizeof(struct switch_t));
     sw->mac = mac;
     sw->priority = priority;
     sw->nbPorts = 0;
     
+    // Allocation manquante du BPDU
+    sw->bpdu = calloc(1, sizeof(struct BPDU)); 
     sw->bpdu->root = mac;
     sw->bpdu->cost = 0;
     sw->bpdu->bridge_id = mac;
@@ -53,10 +51,11 @@ static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, 
     p->status = DEFAULT; 
     p->type = ntype;     
     
+    // Correction de l'accès aux champs de l'union
     if (ntype == SWITCH) {
-        p->equipment.sw = (struct switch_t *)neighbor;
+        p->equipment.switch_t = (struct switch_t *)neighbor; 
     } else {
-        p->equipment.st = (struct station *)neighbor;
+        p->equipment.station = (struct station *)neighbor;
     }
     
     sw->ports[idx] = p;
@@ -64,9 +63,6 @@ static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, 
     return idx;
 }
 
-/* ============================================================
- * LECTURE DU FICHIER ET ASSEMBLAGE
- * ============================================================ */
 void ReadFile(const char *filepath, struct network *net) {
     FILE *f = fopen(filepath, "r");
     if (!f) {
@@ -132,7 +128,7 @@ void ReadFile(const char *filepath, struct network *net) {
             } else if (eq_type[id1] == STATION) {
                 struct port *p_st = calloc(1, sizeof(struct port));
                 p_st->num = id2; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
-                p_st->equipment.sw = (struct switch_t *)eq_ptr[id2];
+                p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id2];
                 ((struct station *)eq_ptr[id1])->p = p_st;
             }
 
@@ -141,7 +137,7 @@ void ReadFile(const char *filepath, struct network *net) {
             } else if (eq_type[id2] == STATION) {
                 struct port *p_st = calloc(1, sizeof(struct port));
                 p_st->num = id1; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
-                p_st->equipment.sw = (struct switch_t *)eq_ptr[id1];
+                p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id1];
                 ((struct station *)eq_ptr[id2])->p = p_st;
             }
         }
@@ -149,9 +145,6 @@ void ReadFile(const char *filepath, struct network *net) {
     fclose(f);
 }
 
-/* ============================================================
- * AFFICHAGE DU RÉSEAU (Appelé quand on appuie sur 1)
- * ============================================================ */
 void print_network(struct network *net) {
     if (net == NULL) return;
 
@@ -193,9 +186,6 @@ void print_network(struct network *net) {
     }
 }
 
-/* ============================================================
- * LIBÉRATION DE LA MÉMOIRE
- * ============================================================ */
 void free_network(struct network *net) {
     if (net == NULL) return;
 
@@ -204,6 +194,13 @@ void free_network(struct network *net) {
         for (int p = 0; p < sw->nbPorts; p++) {
             if (sw->ports[p] != NULL) free(sw->ports[p]);
         }
+        
+        // Libération de la mémoire oubliée
+        if (sw->bpdu != NULL) free(sw->bpdu);
+        for(int j = 0; j < 32; j++) {
+            if(sw->tableCommutation[j] != NULL) free(sw->tableCommutation[j]);
+        }
+        
         free(sw);
     }
     

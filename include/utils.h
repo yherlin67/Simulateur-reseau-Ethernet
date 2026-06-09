@@ -16,4 +16,4 @@ void display_binary_mac(uint64_t mac);
 // Fonctions d'affichage
 void print_mac(uint64_t mac);
 void print_ip(uint32_t ip);
-const char *port_status_str(enum device_type s);
+const char *port_status_str(enum port_status s);

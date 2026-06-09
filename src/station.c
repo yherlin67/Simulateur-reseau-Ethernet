@@ -1,38 +1,39 @@
-/*
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "station.h"
+#include "utils.h"
 
 void station_send(struct station *src, struct station *dst, const char *message, struct scheduler *sched, struct network *net)
 {
-    //La station construit sa trame
+    // Ne pas utiliser (void)net si possible, mais présent pour correspondre à ton prototype.
+    (void)net;
     struct eth_frame frame;
     memset(&frame, 0, sizeof(frame));
 
     frame.destination = dst->mac;
     frame.source = src->mac;
 
-    // Ethernet II : type > 1500 → ici 0x0800 = IPv4 */
     frame.type[0] = 0x00;
-    frame.type[1] = 0x08; // Ethernet II ou sinon sizeof(struct BPDU)
+    frame.type[1] = 0x08; 
 
     strncpy((char *)frame.data, message, sizeof(frame.data) - 1);
 
-    //Push dans la file vers le switch voisin
-    scheduler_push(sched, &frame, SWITCH, src->p->equipment.switch_t, src->p->num);
+    scheduler_push(sched, &frame, SWITCH, src->p->equipment, src->p->num);
 
-    //Traiter au tick suivant
-    scheduler_tick(sched, net);
+    scheduler_tick(sched);
 }
 
-void receive_frame(struct station *st, struct eth_frame *frame, uint8_t num_port)
+void receive_frame_st(struct station *st, struct eth_frame *frame, uint8_t num_port)
 {
-    // Vérifier que la trame est bien pour cette station
-    if (frame->destination != st->mac)
+    // Garde le port pour contrer les avertissements de non utilisation
+    (void)num_port;
+
+    if (frame->destination != st->mac && frame->destination != 0xFFFFFFFFFFFF) 
     {
-        //Pas pour nous, on ignore
         return;
     }
 
-    //La trame nous est destinée → on affiche le message
     printf("Station "); print_mac(st->mac);
     printf(" reçoit de "); print_mac(frame->source);
     printf(" : \"%s\"\n", (char *)frame->data);
