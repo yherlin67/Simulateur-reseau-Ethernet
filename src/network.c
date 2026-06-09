@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h> 
+
 #include "network.h"
 #include "utils.h"
+#include "switch.h" 
+#include "station.h"
 
 struct raw_link {
     int id1;
@@ -23,10 +27,10 @@ static struct switch_t *make_switch(uint64_t mac, uint8_t priority) {
     sw->priority = priority;
     sw->nbPorts = 0;
     
-    sw->bpdu.root = mac;
-    sw->bpdu.cost = 0;
-    sw->bpdu.bridge_id = mac;
-    sw->bpdu.num_port = 0;
+    sw->bpdu->root = mac;
+    sw->bpdu->cost = 0;
+    sw->bpdu->bridge_id = mac;
+    sw->bpdu->num_port = 0;
     sw->visited = false;
     
     return sw;
@@ -50,9 +54,9 @@ static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, 
     p->type = ntype;     
     
     if (ntype == SWITCH) {
-        p->equipment.switch_t = (struct switch_t *)neighbor;
+        p->equipment.sw = (struct switch_t *)neighbor;
     } else {
-        p->equipment.station = (struct station *)neighbor;
+        p->equipment.st = (struct station *)neighbor;
     }
     
     sw->ports[idx] = p;
@@ -128,7 +132,7 @@ void ReadFile(const char *filepath, struct network *net) {
             } else if (eq_type[id1] == STATION) {
                 struct port *p_st = calloc(1, sizeof(struct port));
                 p_st->num = id2; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
-                p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id2];
+                p_st->equipment.sw = (struct switch_t *)eq_ptr[id2];
                 ((struct station *)eq_ptr[id1])->p = p_st;
             }
 
@@ -137,7 +141,7 @@ void ReadFile(const char *filepath, struct network *net) {
             } else if (eq_type[id2] == STATION) {
                 struct port *p_st = calloc(1, sizeof(struct port));
                 p_st->num = id1; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
-                p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id1];
+                p_st->equipment.sw = (struct switch_t *)eq_ptr[id1];
                 ((struct station *)eq_ptr[id2])->p = p_st;
             }
         }

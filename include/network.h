@@ -2,9 +2,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "station.h"
-#include "switch.h"
 #include "packet.h"
+
+struct station;
+struct switch_t;
 
 #define MAX_DEVICES 64
 
@@ -24,8 +25,8 @@ enum device_type {
 // union switch ou station => définie ici avec un nom de type pour pouvoir être réutilisée dans struct port ET dans struct node_frame du scheduler 
 
 union equipment_union {          
-    struct station  *st;
-    struct switch_t *sw;
+    struct station  *station;
+    struct switch_t *switch_t;
 };
 
 
@@ -40,7 +41,7 @@ struct port {
    // enum port_role role;
     enum device_type type;
     // l'équipement connecté sous forme de union = station ou switch
-    equipment_union equipment;
+    union equipment_union equipment;
 };
 
 struct link {

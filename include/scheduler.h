@@ -38,7 +38,7 @@ struct scheduler{
 void scheduler_init(struct scheduler *s);
 
 //Ajoute une trame en queue de file + alloue un nouveau nœud dynamiquement
-scheduler_push(sched, &frame, pt->type, pt->equipment, pt->num);
+void scheduler_push(struct scheduler *s, struct eth_frame *frame, enum device_type dst_type, union equipment_union dst, uint8_t in_port);
 
 //Retire et retourne le nœud en tête de file.
 //Retourne NULL si la file est vide.

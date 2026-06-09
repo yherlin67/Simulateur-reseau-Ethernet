@@ -6,6 +6,7 @@
 #include "packet.h"
 #include "station.h"
 #include "network.h"
+#include "scheduler.h"
 
 #define MAX_PORTS 32
 
