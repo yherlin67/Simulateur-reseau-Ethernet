@@ -35,28 +35,28 @@ struct port {
     //Un port dans le tableau ports d'un switch est forcément connecté à ce switch, et un des deux autres appareils dans l'union
     //Un port en attribut d'une station est forcément connecté à cette station et un des deux autres appareils dans l'union
     //Il n'y a plus besoin de struct lien, cost represente le cout pour atteindre le port
-    uint8_t num;
+    uint8_t num; // INDICE du port dans le tableau de ports ports[] du switch qui le possède.
     uint8_t cost;
-    enum port_status status;
+    enum port_status status; // état du port pour STP
    // enum port_role role;
     enum device_type type;
     // l'équipement connecté sous forme de union = station ou switch
-    union equipment_union equipment;
+    union equipment_union equipment; // POINTEUR vers l'équipement voisin (type permet de définir lequel c'est STATION ou SWITCH)
 };
-
+/*
 struct link {
    uint8_t cost;
    struct port *portA;
    struct port *portB;
 };
+*/
 
 struct network {
-    size_t nb_stations;
-    size_t nb_switchs;
-    struct station *stations[MAX_DEVICES];
-    struct switch_t *switchs[MAX_DEVICES];
-    size_t nbLiens;
-    struct lien **liens;
+    size_t nb_stations; // nbre de stations actuellement dans le réseau (compteur pour parcourir stations[])
+    size_t nb_switchs; // pareil mais pr les switchs
+    struct station *stations[MAX_DEVICES]; // tableau de pointeur vers toutes les stations, chaque case => pointe vers struct station
+    struct switch_t *switchs[MAX_DEVICES]; // pareil mais pr les switchs
+    size_t nbLiens; 
 };
 
 void ReadFile(const char *pathFile, struct network *res);

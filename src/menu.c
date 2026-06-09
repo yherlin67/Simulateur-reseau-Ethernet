@@ -5,7 +5,7 @@
 #include "network.h"
 #include "utils.h"
 #include "switch.h"
-
+#include "scheduler.h"
 
 
 extern void print_network(struct network *net);
@@ -64,6 +64,11 @@ void displayMenu(struct network *net)
             {
                 printf("-> Lancement du protocole STP...\n\n");
                 stpLance = true;
+                
+                 struct scheduler sched;
+                scheduler_init(&sched);
+                run_stp(net, &sched);      
+                scheduler_clear(&sched);
 
                 print_stp(net);
 

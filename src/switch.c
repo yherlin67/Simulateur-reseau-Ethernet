@@ -6,7 +6,7 @@
 
 extern void receive_frame_st(struct station *st, struct eth_frame *frame, uint8_t num_port);
 
-static bool stp_running = true;
+static bool stp_running = false;
 
 void disable_stp(struct network *net)
 {
@@ -52,13 +52,28 @@ void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_por
 {
     enum frame_type type = determine_type(*frame);
 
+printf("[DEBUG] receive_frame appelé sur switch MAC=");
+    print_mac(sw->mac);
+    printf(" port=%d\n", num_port);
+
     if(type == IEEE802_3)
     {
         struct BPDU *bpdu = (struct BPDU *)frame->data;
-        if(bpdu_is_better(sw->bpdu, bpdu))
-            update_bpdu(sw, bpdu, num_port);
-        else
-            stp_running = false;
+
+        // calculer ce que deviendrait notre BPDU si on acceptait celui-ci
+        struct BPDU candidat;
+        candidat.root = bpdu->root;
+        candidat.cost = bpdu->cost + sw->ports[num_port]->cost;
+        candidat.bridge_id = sw->mac;
+        candidat.num_port = num_port;
+
+        // l'accepter seulement si c'est vraiment meilleur
+        if(bpdu_is_better(&candidat, sw->bpdu))
+        {
+            sw->received[num_port] = *bpdu;
+            *sw->bpdu = candidat;
+            stp_running = true;
+        }
     }
     else if(type == ETHERNET_II)
     {
@@ -133,18 +148,23 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
 
 void propagate_bpdu(struct network *net, struct scheduler *sched)
 {
+    printf("[DEBUG] propagate_bpdu appelé, nb_switchs=%zu\n", net->nb_switchs);
     bool changed = true;
     while(changed)
     {
         changed = false;
+        printf("[DEBUG] nouveau tick, remplissage de la file...\n");
         for(int i = 0; i < (int)net->nb_switchs; i++)
         {
             struct switch_t *switch_actuel = net->switchs[i];
+            printf("[DEBUG] switch %d a %d ports\n", i, switch_actuel->nbPorts);
             for(int j = 0; j < switch_actuel->nbPorts; j++)
             {
                 struct port *pt = switch_actuel->ports[j];
+                printf("[DEBUG] port %d : pt=%p, type=%d\n", j, (void*)pt, pt ? (int)pt->type : -1);
                 if (pt && pt->type == SWITCH)
                 {
+                    printf("[DEBUG] push vers switch voisin\n");
                     struct eth_frame new_frame;
                     memset(&new_frame, 0, sizeof(new_frame));
 
@@ -160,12 +180,28 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                     new_frame.type[1] = sizeof(struct BPDU);
                     memcpy(new_frame.data, &bpdu_to_send, sizeof(struct BPDU));
 
-                    scheduler_push(sched, &new_frame, pt->type, pt->equipment, pt->num);
+                    // on cherche le port destinataire du switch voisin pour le scheduler :
+                    struct switch_t *voisin = pt->equipment.switch_t;
+                    uint8_t in_port = 0;
+                    for(int k = 0; k < voisin->nbPorts; k++)
+                    {
+                        if(voisin->ports[k] &&
+                        voisin->ports[k]->type == SWITCH &&
+                        voisin->ports[k]->equipment.switch_t == switch_actuel)
+                        {
+                            in_port = k;
+                            break;
+                        }
+                    }
+                    scheduler_push(sched, &new_frame, pt->type, pt->equipment, in_port);
                 }
             }
         }
+        stp_running = false;
+         printf("[DEBUG] file remplie, size=%d, on lance le tick\n", sched->size);
         scheduler_tick(sched);
         changed = stp_running;
+        printf("[DEBUG] après tick, changed=%d\n", changed);
     }
     search_root(net);
 }
@@ -189,60 +225,48 @@ bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
     sw->received[num_port] = *bpdu;
 
     sw->bpdu->root = bpdu->root;
-    sw->bpdu->cost = bpdu->cost + 1;
+    sw->bpdu->cost = bpdu->cost + sw->ports[num_port]->cost;
     sw->bpdu->bridge_id = sw->mac;
     return true;
 }
 
 void search_root(struct network *net)
 {
-    uint8_t racine = 0;
     for(int i = 0; i < (int)net->nb_switchs; i++)
-    {
-        struct switch_t *switch_actuel = net->switchs[i];
-        if(switch_actuel->mac == switch_actuel->bpdu->root)
         {
-            racine = i;
-            break;
-        }
-    }
-    struct switch_t *switch_racine = net->switchs[racine];
-    set_ports(switch_racine);   
+            set_ports(net->switchs[i]);
+        } 
 }
 
 void set_ports(struct switch_t * sw)
 {
-    if(sw->visited) 
-        return;
-    sw->visited = true;
-
     for(int j = 0; j < sw->nbPorts; j++)
     {
         struct port *p = sw->ports[j];
         if(p == NULL || p->type != SWITCH) 
             continue;
 
+        printf("[DEBUG set_ports] switch %02X port %d num_port=%d\n",
+               (uint8_t)sw->mac, j, sw->bpdu->num_port);
+
+
         if(sw->mac == sw->bpdu->root)
         {
+            // si le switch est la racine alors TOUS CES PORTS SONT DESIGNATED
             p->status = DESIGNATED;
+        }
+        else if(j == sw->bpdu->num_port)
+        {
+            p->status = ROOT; // port par lequel on atteint la racine
+        }
+        else if(bpdu_is_better(sw->bpdu, &sw->received[j]))
+        {
+            p->status = DESIGNATED; // mon BPDU est meilleur que ce que j'ai reçu ici
         }
         else
         {
-            if(p->status != ROOT)
-                p->status = bpdu_is_better(&sw->received[j], sw->bpdu) ? BLOCKED : DESIGNATED;
+            p->status = BLOCKED;
         }
-
-        struct switch_t *voisin = p->equipment.switch_t;
-        for(int k = 0; k < voisin->nbPorts; k++)
-        {
-            if(voisin->ports[k] && voisin->ports[k]->equipment.switch_t->mac == sw->mac)
-            {
-                voisin->ports[k]->status = ROOT;
-                break;
-            }
-        }
-
-        set_ports(voisin);
     }
 }
 

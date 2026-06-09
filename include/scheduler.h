@@ -19,7 +19,7 @@ struct node_frame {
     // Qui envoie la trame ? 
     enum device_type dst_type; // définit si switch ou station 
     union equipment_union dst;      // même type que port.equipment
-    uint8_t in_port;      //numéro du port d'entrée chez le destinataire
+    uint8_t in_port;      //numéro du port d'entrée chez le DESTINATAIRE !!!!
     struct node_frame *next; // pointeur pour le noeud (frame) suivante -> file sous forme de liste chainée 
 };
 

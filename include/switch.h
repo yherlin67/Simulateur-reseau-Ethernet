@@ -22,7 +22,7 @@ struct switch_t {
     uint64_t mac;
     uint8_t nbPorts;
     struct port *ports[MAX_PORTS];
-    uint8_t priority;
+    uint16_t priority;
     struct commutation_entry *tableCommutation[32];
     struct BPDU *bpdu;  // c'est ce qu'on envoie.
     struct BPDU received[MAX_PORTS];     // meilleur BPDU reçu sur chaque port (c'est ce qu'on recoit)
@@ -42,6 +42,7 @@ void search_root(struct network *net);
 void set_ports(struct switch_t * sw);
 void init_stp(struct network *net);
 void print_stp(struct network *net);
+void run_stp(struct network *net, struct scheduler *sched);
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets

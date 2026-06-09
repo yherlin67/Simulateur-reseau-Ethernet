@@ -22,7 +22,7 @@ struct BPDU {
     uint64_t root; //addresse MAC du switch racine
     uint8_t cost; //coût pour atteindre la racine
     uint64_t bridge_id; //addresse MAC du switch qui envoie le BPDU
-    uint8_t num_port;
+    uint8_t num_port; // port émetteur qui envoie le BPDU
 };
 
 //void verif_type(*t);

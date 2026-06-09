@@ -17,13 +17,13 @@ struct raw_link {
 static struct raw_link *saved_raw_links = NULL;
 static int saved_nb_eq = 0;
 
-static struct switch_t *make_switch(uint64_t mac, uint8_t priority) {
+static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
     struct switch_t *sw = calloc(1, sizeof(struct switch_t));
     sw->mac = mac;
     sw->priority = priority;
     sw->nbPorts = 0;
     
-    // Allocation manquante du BPDU
+    // allocation du BPDU pour effectuer le spanning tree pour la première fois.
     sw->bpdu = calloc(1, sizeof(struct BPDU)); 
     sw->bpdu->root = mac;
     sw->bpdu->cost = 0;
@@ -46,7 +46,7 @@ static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, 
     int idx = sw->nbPorts; 
     struct port *p = calloc(1, sizeof(struct port));
     
-    p->num = target_id; 
+    p->num = (uint8_t)idx; // idx = sw->nbPorts avant l'incrémentation = 0, 1, 2... et pour l'affichage on utilise target_id, mais que pour l'affichage...
     p->cost = cost;
     p->status = DEFAULT; 
     p->type = ntype;     
@@ -97,7 +97,7 @@ void ReadFile(const char *filepath, struct network *net) {
             if (type == 2) { 
                 int nb_ports_physiques = 0, prio = 0;
                 sscanf(line, "%*d;%31[^;];%d;%d", mac_s, &nb_ports_physiques, &prio);
-                struct switch_t *sw = make_switch(convert_mac(mac_s), (uint8_t)prio);
+                struct switch_t *sw = make_switch(convert_mac(mac_s), (uint16_t)prio);
                 net->switchs[net->nb_switchs++] = sw;
                 eq_ptr[i] = sw;
                 eq_type[i] = SWITCH;
@@ -150,7 +150,7 @@ void print_network(struct network *net) {
 
     printf("================ EN-TÊTE ================\n");
     printf("Nombre d'equipements attendus : %d\n", saved_nb_eq);
-    printf("Nombre de liens attendus       : %zu\n\n", net->nbLiens);
+    printf("Nombre de liens attendus : %zu\n\n", net->nbLiens);
 
     printf("============== ÉQUIPEMENTS ==============\n");
     for (size_t i = 0; i < net->nb_switchs; i++) {
@@ -169,10 +169,10 @@ void print_network(struct network *net) {
         struct station *st = net->stations[i];
         printf("STATION -> MAC : ");
         display_mac(st->mac);
-        printf("\n             -> IP  : ");
+        printf("\n        -> IP  : ");
         display_ip(st->ip);
         if(st->p != NULL) {
-            printf("\n             -> Connectée à ID %d (coût: %d)", st->p->num, st->p->cost);
+            printf("\n        -> Connectée à ID %d (coût: %d)", st->p->num, st->p->cost);
         }
         printf("\n\n");
     }
@@ -180,8 +180,7 @@ void print_network(struct network *net) {
     if (saved_raw_links != NULL) {
         printf("================= LIENS =================\n");
         for (size_t i = 0; i < net->nbLiens; i++) {
-            printf("Lien n°%zu : Equipement %d <---> Equipement %d (Cout: %d)\n", 
-                   i + 1, saved_raw_links[i].id1, saved_raw_links[i].id2, saved_raw_links[i].cost);
+            printf("Lien n°%zu : Equipement %d <---> Equipement %d (Cout: %d)\n", i + 1, saved_raw_links[i].id1, saved_raw_links[i].id2, saved_raw_links[i].cost);
         }
     }
 }
