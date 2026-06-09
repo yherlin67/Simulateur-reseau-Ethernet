@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include "network.h"
 
 // Affichage d'une adresse ip
@@ -69,4 +70,24 @@ const char *port_status_str(enum device_type s)
         case BLOCKED: return "BLOCKED";
         default: return "DEFAULT";
     }
+}
+
+// Affiche la MAC au format XX:XX:XX:XX:XX:XX à partir d'un entier 64 bits
+void display_mac(uint64_t mac) {
+    printf("%02X:%02X:%02X:%02X:%02X:%02X", 
+           (unsigned int)((mac >> 40) & 0xFF),
+           (unsigned int)((mac >> 32) & 0xFF),
+           (unsigned int)((mac >> 24) & 0xFF),
+           (unsigned int)((mac >> 16) & 0xFF),
+           (unsigned int)((mac >> 8)  & 0xFF),
+           (unsigned int)(mac & 0xFF));
+}
+
+// Affiche l'IP au format XXX.XXX.XXX.XXX à partir d'un entier 32 bits
+void display_ip(uint32_t ip) {
+    printf("%u.%u.%u.%u", 
+           (unsigned int)((ip >> 24) & 0xFF),
+           (unsigned int)((ip >> 16) & 0xFF),
+           (unsigned int)((ip >> 8)  & 0xFF),
+           (unsigned int)(ip & 0xFF));
 }

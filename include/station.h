@@ -18,7 +18,7 @@ struct station {
 
 void station_send(struct station *src, struct station *dst, const char *message, struct scheduler *sched, struct network *net);
 
-void receive_frame(struct station *st, struct eth_frame *frame, uint8_t num_port);
+//void receive_frame(struct station *st, struct eth_frame *frame, uint8_t num_port);
 
 //void send_frame(struct eth_frame frame);
 //Envoie une trame ethernet

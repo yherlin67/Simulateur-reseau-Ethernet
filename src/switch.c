@@ -1,3 +1,4 @@
+/*
 #include "switch.h"
 
 //Variable globale pour savoir si le stp continue ou pas
@@ -570,4 +571,8 @@ void init_stp(struct network *net)
             }
         }
     }
+
+    //On libère la trame après envoie
+    free(new_frame);
 }
+    

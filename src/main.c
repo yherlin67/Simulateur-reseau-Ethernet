@@ -3,28 +3,26 @@
 #include <stdint.h>
 #include <string.h>
 #include "network.h"
+#include "switch.h"
 
-
-void sendFrame(char message)
-{
-
+void sendFrame(char message) {
+    // À implémenter
 }
 
 int main() {
     const char *chemin = "mylan_no_cycle.txt";
-    struct reseau res;
+    
+    struct network res;
 
-    res.liens = NULL;
-    res.nbLiens = 0;
-
+    // 1. On charge le réseau
     ReadFile(chemin, &res);
 
-    for(size_t i = 0; i < res.nbLiens; i++) {
-        free(res.liens[i]->portA);
-        free(res.liens[i]->portB);
-        free(res.liens[i]);
-    }
-    free(res.liens);
+    // 2. On lance le menu en lui donnant accès au réseau chargé
+    extern void displayMenu(struct network *net);
+    displayMenu(&res);
+
+    // 3. Libération mémoire à la fermeture du menu
+    free_network(&res);
 
     return 0;
 }

@@ -1,96 +1,216 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "network.h"
+#include "utils.h"
 
-void ReadFile(const char *pathFile, struct network *res) {
-    FILE *file = fopen(pathFile, "r");
+struct raw_link {
+    int id1;
+    int id2;
+    int cost;
+};
+
+static struct raw_link *saved_raw_links = NULL;
+static int saved_nb_eq = 0;
+
+/* ============================================================
+ * MÉTHODES DE CRÉATION ET D'ALLOCATION
+ * ============================================================ */
+
+static struct switch_t *make_switch(uint64_t mac, uint8_t priority) {
+    struct switch_t *sw = calloc(1, sizeof(struct switch_t));
+    sw->mac = mac;
+    sw->priority = priority;
+    sw->nbPorts = 0;
     
-    if (file == NULL) {
-        printf("Erreur : Impossible d'ouvrir le fichier '%s'.\n", pathFile);
+    sw->bpdu.root = mac;
+    sw->bpdu.cost = 0;
+    sw->bpdu.bridge_id = mac;
+    sw->bpdu.num_port = 0;
+    sw->visited = false;
+    
+    return sw;
+}
+
+static struct station *make_station(uint64_t mac, uint32_t ip) {
+    struct station *st = calloc(1, sizeof(struct station));
+    st->mac = mac;
+    st->ip = ip;
+    st->p = NULL;
+    return st;
+}
+
+static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, enum device_type ntype, void *neighbor) {
+    int idx = sw->nbPorts; 
+    struct port *p = calloc(1, sizeof(struct port));
+    
+    p->num = target_id; 
+    p->cost = cost;
+    p->status = DEFAULT; 
+    p->type = ntype;     
+    
+    if (ntype == SWITCH) {
+        p->equipment.switch_t = (struct switch_t *)neighbor;
+    } else {
+        p->equipment.station = (struct station *)neighbor;
+    }
+    
+    sw->ports[idx] = p;
+    sw->nbPorts++;
+    return idx;
+}
+
+/* ============================================================
+ * LECTURE DU FICHIER ET ASSEMBLAGE
+ * ============================================================ */
+void ReadFile(const char *filepath, struct network *net) {
+    FILE *f = fopen(filepath, "r");
+    if (!f) {
+        printf("Erreur : impossible d'ouvrir '%s'\n", filepath);
         return;
     }
+
+    net->nb_stations = 0;
+    net->nb_switchs = 0;
+    net->nbLiens = 0;
+
     char line[256];
+    int nb_eq = 0, nb_liens = 0;
 
-    int equipments = 0;
-    int nbLiens = 0;
-
-    if (fgets(line, sizeof(line), file) != NULL) {
-        sscanf(line, "%d %d", &equipments, &nbLiens);
+    if (fgets(line, sizeof(line), f) != NULL) {
+        sscanf(line, "%d %d", &nb_eq, &nb_liens);
+        net->nbLiens = nb_liens;
+        saved_nb_eq = nb_eq;
     }
+
+    void *eq_ptr[MAX_DEVICES];
+    enum device_type eq_type[MAX_DEVICES];
+    memset(eq_ptr, 0, sizeof(eq_ptr));
+
+    for (int i = 0; i < nb_eq; i++) {
+        if (fgets(line, sizeof(line), f) != NULL) {
+            int type = 0;
+            sscanf(line, "%d", &type);
+            
+            char mac_s[32] = {0}, ip_s[32] = {0};
+
+            if (type == 2) { 
+                int nb_ports_physiques = 0, prio = 0;
+                sscanf(line, "%*d;%31[^;];%d;%d", mac_s, &nb_ports_physiques, &prio);
+                struct switch_t *sw = make_switch(convert_mac(mac_s), (uint8_t)prio);
+                net->switchs[net->nb_switchs++] = sw;
+                eq_ptr[i] = sw;
+                eq_type[i] = SWITCH;
+            } else if (type == 1) { 
+                sscanf(line, "%*d;%31[^;];%31[^\n]", mac_s, ip_s);
+                struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
+                net->stations[net->nb_stations++] = st;
+                eq_ptr[i] = st;
+                eq_type[i] = STATION;
+            }
+        }
+    }
+
+    if (saved_raw_links != NULL) free(saved_raw_links);
+    saved_raw_links = malloc(nb_liens * sizeof(struct raw_link));
+    
+    for (int i = 0; i < nb_liens; i++) {
+        if (fgets(line, sizeof(line), f) != NULL) {
+            int id1 = 0, id2 = 0, cout = 0;
+            sscanf(line, "%d;%d;%d", &id1, &id2, &cout);
+            
+            saved_raw_links[i].id1 = id1;
+            saved_raw_links[i].id2 = id2;
+            saved_raw_links[i].cost = cout;
+
+            if (eq_type[id1] == SWITCH) {
+                add_port_to_switch((struct switch_t *)eq_ptr[id1], id2, (uint8_t)cout, eq_type[id2], eq_ptr[id2]);
+            } else if (eq_type[id1] == STATION) {
+                struct port *p_st = calloc(1, sizeof(struct port));
+                p_st->num = id2; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
+                p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id2];
+                ((struct station *)eq_ptr[id1])->p = p_st;
+            }
+
+            if (eq_type[id2] == SWITCH) {
+                add_port_to_switch((struct switch_t *)eq_ptr[id2], id1, (uint8_t)cout, eq_type[id1], eq_ptr[id1]);
+            } else if (eq_type[id2] == STATION) {
+                struct port *p_st = calloc(1, sizeof(struct port));
+                p_st->num = id1; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
+                p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id1];
+                ((struct station *)eq_ptr[id2])->p = p_st;
+            }
+        }
+    }
+    fclose(f);
+}
+
+/* ============================================================
+ * AFFICHAGE DU RÉSEAU (Appelé quand on appuie sur 1)
+ * ============================================================ */
+void print_network(struct network *net) {
+    if (net == NULL) return;
+
     printf("================ EN-TÊTE ================\n");
-    printf("Nombre d'equipements attendus : %d\n", equipments);
-    printf("Nombre de liens attendus       : %d\n\n", nbLiens);
-    res->nbLiens = nbLiens;
-    res->liens = malloc(nbLiens * sizeof(struct lien*));
+    printf("Nombre d'equipements attendus : %d\n", saved_nb_eq);
+    printf("Nombre de liens attendus       : %zu\n\n", net->nbLiens);
 
     printf("============== ÉQUIPEMENTS ==============\n");
-    for (int i = 0; i < equipments; i++) {
-        if (fgets(line, sizeof(line), file) != NULL) {
-            int typeEquipement = 0;
-            sscanf(line, "%d", &typeEquipement);
-            
-            char macStr[32] = {0};
-            char ipStr[32] = {0};
-
-            if (typeEquipement == 2) { // Cas switch
-                uint64_t adresseMac = 0;
-                int nbPorts = 0;
-                int priorite = 0;
-
-                sscanf(line, "%*d;%[^;];%d;%d", macStr, &nbPorts, &priorite);
-                adresseMac = convert_mac(macStr);
-
-                printf("[ID %d] SWITCH  -> MAC Brut: %s\n", i, macStr);
-                printf("             -> MAC Bin : ");
-                display_binairy_mac(adresseMac);
-                printf(" | Ports: %d | Priorite: %d\n\n", nbPorts, priorite);
-            } 
-            else if (typeEquipement == 1) { // Cas station
-                uint64_t adresseMac = 0;
-                uint32_t adresseIp = 0;
-
-                sscanf(line, "%*d;%[^;];%[^;\n]", macStr, ipStr);
-                adresseMac = convert_mac(macStr);
-                adresseIp = convert_ip(ipStr);
-
-                printf("[ID %d] STATION -> MAC Brut: %s | IP Brute: %s\n", i, macStr, ipStr);
-                printf("             -> MAC Bin : ");
-                display_binary_mac(adresseMac);
-                printf("\n             -> IP Bin  : ");
-                display_binary_ip(adresseIp);
-                printf("\n\n");
+    for (size_t i = 0; i < net->nb_switchs; i++) {
+        struct switch_t *sw = net->switchs[i];
+        printf("[ID %zu] SWITCH  -> MAC : ", i);
+        display_mac(sw->mac);
+        printf(" | Ports connectés: %d | Priorite: %d\n", sw->nbPorts, sw->priority);
+        for(int p = 0; p < sw->nbPorts; p++) {
+            if(sw->ports[p] != NULL) {
+                printf("             -> Connecté à ID %d (coût: %d)\n", sw->ports[p]->num, sw->ports[p]->cost);
             }
         }
+        printf("\n");
+    }
+    for (size_t i = 0; i < net->nb_stations; i++) {
+        struct station *st = net->stations[i];
+        printf("STATION -> MAC : ");
+        display_mac(st->mac);
+        printf("\n             -> IP  : ");
+        display_ip(st->ip);
+        if(st->p != NULL) {
+            printf("\n             -> Connectée à ID %d (coût: %d)", st->p->num, st->p->cost);
+        }
+        printf("\n\n");
     }
 
-    printf("================= LIENS =================\n");
-    for (int i = 0; i < nbLiens; i++) {
-        if (fgets(line, sizeof(line), file) != NULL) {
-            int idEquipement1 = 0;
-            int idEquipement2 = 0;
-            int coutLien = 0;
-
-            sscanf(line, "%d;%d;%d", &idEquipement1, &idEquipement2, &coutLien);
-            printf("Lien n°%d : Equipement %d <---> Equipement %d (Cout: %d)\n", i + 1, idEquipement1, idEquipement2, coutLien);
-            res->link[i] = malloc(sizeof(struct link));
-
-            if (res->liens[i] == NULL) {
-                perror("Erreur allocation structure lien");
-                return; 
-            }
-
-            res->liens[i]->portA = malloc(sizeof(struct port));
-            res->liens[i]->portB = malloc(sizeof(struct port));
-
-            res->liens[i]->cost = (uint8_t)coutLien;
-            
-            res->liens[i]->portA->num = (uint8_t)idEquipement1;
-            res->liens[i]->portA->s = DEFAULT;
-            res->liens[i]->portA->r = MODE_DEFAULT;
-
-            res->liens[i]->portB->num = (uint8_t)idEquipement2;
-            res->liens[i]->portB->s = DEFAULT;
-            res->liens[i]->portB->r = MODE_DEFAULT;
+    if (saved_raw_links != NULL) {
+        printf("================= LIENS =================\n");
+        for (size_t i = 0; i < net->nbLiens; i++) {
+            printf("Lien n°%zu : Equipement %d <---> Equipement %d (Cout: %d)\n", 
+                   i + 1, saved_raw_links[i].id1, saved_raw_links[i].id2, saved_raw_links[i].cost);
         }
     }
+}
 
-    fclose(file);
+/* ============================================================
+ * LIBÉRATION DE LA MÉMOIRE
+ * ============================================================ */
+void free_network(struct network *net) {
+    if (net == NULL) return;
+
+    for (size_t i = 0; i < net->nb_switchs; i++) {
+        struct switch_t *sw = net->switchs[i];
+        for (int p = 0; p < sw->nbPorts; p++) {
+            if (sw->ports[p] != NULL) free(sw->ports[p]);
+        }
+        free(sw);
+    }
+    
+    for (size_t i = 0; i < net->nb_stations; i++) {
+        struct station *st = net->stations[i];
+        if (st->p != NULL) free(st->p);
+        free(st);
+    }
+
+    if (saved_raw_links != NULL) {
+        free(saved_raw_links);
+        saved_raw_links = NULL;
+    }
 }

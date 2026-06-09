@@ -1,3 +1,4 @@
+/*
 #include "station.h"
 
 void station_send(struct station *src, struct station *dst, const char *message, struct scheduler *sched, struct network *net)

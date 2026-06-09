@@ -37,7 +37,7 @@ struct port {
     uint8_t num;
     uint8_t cost;
     enum port_status status;
-    enum port_role role ;
+   // enum port_role role;
     enum device_type type;
     // l'équipement connecté sous forme de union = station ou switch
     equipment_union equipment;
