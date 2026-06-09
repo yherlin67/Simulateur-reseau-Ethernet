@@ -41,6 +41,7 @@ bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port);
 void search_root(struct network *net);
 void set_ports(struct switch_t * sw);
 void init_stp(struct network *net);
+void print_stp(struct network *net);
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets

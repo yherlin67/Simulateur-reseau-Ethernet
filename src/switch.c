@@ -271,3 +271,31 @@ void init_stp(struct network *net)
         }
     }
 }
+
+void print_stp(struct network *net)
+{
+    for(int i = 0; i < (int)net->nb_switchs; i++)
+    {
+        printf("Switch [ID n°%d]\n",i);
+        for(int p = 0; p < net->switchs[i]->nbPorts; p++)
+        {
+            if(net->switchs[i]->ports[p]->status == 0)
+            {
+                printf("-> Port n°%d a le status : ROOT\n", net->switchs[i]->ports[p]->num);
+            }
+            else if(net->switchs[i]->ports[p]->status == 1)
+            {
+                printf("-> Port n°%d a le status : DESIGNATED\n", net->switchs[i]->ports[p]->num);
+            } 
+            else if(net->switchs[i]->ports[p]->status == 2)
+            {
+                printf("-> Port n°%d a le status : BLOCKED\n", net->switchs[i]->ports[p]->num);
+            } 
+            else if(net->switchs[i]->ports[p]->status == 3)
+            {
+                printf("-> Port n°%d a le status : DEFAULT\n", net->switchs[i]->ports[p]->num);
+            } 
+        } 
+        printf("\n");
+    } 
+}

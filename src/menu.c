@@ -4,6 +4,9 @@
 #include <string.h>
 #include "network.h"
 #include "utils.h"
+#include "switch.h"
+
+
 
 extern void print_network(struct network *net);
 
@@ -54,11 +57,24 @@ void displayMenu(struct network *net)
             {
                 printf("-> Arrêt du protocole STP...\n");
                 stpLance = false;
+
+                disable_stp(net);
             }
             else
             {
-                printf("-> Lancement du protocole STP...\n");
+                printf("-> Lancement du protocole STP...\n\n");
                 stpLance = true;
+
+                print_stp(net);
+
+                char backCommand = '\0';
+                printf("\nAppuyez sur 'q' pour quitter l'affichage : ");
+                while(backCommand != 'q')
+                {
+                    if(scanf(" %c", &backCommand) != 1) break;
+                }
+                ret = system("clear"); (void)ret;
+                userCommand = '\0';
             }
         }
         else if(userCommand == 'q')
