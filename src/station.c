@@ -2,33 +2,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include "station.h"
+#include "station.h"
 #include "utils.h"
 
-void station_send(struct station *src, struct station *dst, const char *message, struct scheduler *sched, struct network *net)
+void station_send(struct station *src, struct station *dst, const char *message, struct scheduler *sched)
 {
-    // Ne pas utiliser (void)net si possible, mais présent pour correspondre à ton prototype.
-    (void)net;
     struct eth_frame frame;
     memset(&frame, 0, sizeof(frame));
 
     frame.destination = dst->mac;
     frame.source = src->mac;
 
-    frame.type[0] = 0x00;
-    frame.type[1] = 0x08; 
+    frame.type[0] = 0x08;
+    frame.type[1] = 0x00; 
 
     strncpy((char *)frame.data, message, sizeof(frame.data) - 1);
 
-    scheduler_push(sched, &frame, SWITCH, src->p->equipment, src->p->num);
+     struct switch_t *sw = src->p->equipment.switch_t;
+    uint8_t in_port = 0;
+    for(int k = 0; k < sw->nbPorts; k++)
+    {
+        if(sw->ports[k] &&
+           sw->ports[k]->type == STATION &&
+           sw->ports[k]->equipment.station == src)
+        {
+            in_port = k;
+            break;
+        }
+    }
 
+    scheduler_push(sched, &frame, SWITCH, src->p->equipment, in_port);
     scheduler_tick(sched);
 }
 
-void receive_frame_st(struct station *st, struct eth_frame *frame, uint8_t num_port)
+void receive_frame_st(struct station *st, struct eth_frame *frame)
 {
-    // Garde le port pour contrer les avertissements de non utilisation
-    (void)num_port;
-
     if (frame->destination != st->mac && frame->destination != 0xFFFFFFFFFFFF) 
     {
         return;

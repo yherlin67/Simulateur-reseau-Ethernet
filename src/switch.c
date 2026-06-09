@@ -4,7 +4,7 @@
 #include "switch.h"
 #include "utils.h"
 
-extern void receive_frame_st(struct station *st, struct eth_frame *frame, uint8_t num_port);
+extern void receive_frame_st(struct station *st, struct eth_frame *frame);
 
 static bool stp_running = false;
 
@@ -51,10 +51,6 @@ enum frame_type determine_type(struct eth_frame frame)
 void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port)
 {
     enum frame_type type = determine_type(*frame);
-
-printf("[DEBUG] receive_frame appelé sur switch MAC=");
-    print_mac(sw->mac);
-    printf(" port=%d\n", num_port);
 
     if(type == IEEE802_3)
     {
@@ -122,7 +118,7 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
             }
             if(p->type == STATION)
             {
-                receive_frame_st(p->equipment.station, frame, p->num);
+                receive_frame_st(p->equipment.station, frame);
             }
             else if(p->type == SWITCH)
             {
@@ -136,7 +132,7 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
         if(p != NULL) {
             if(p->type == STATION)
             {
-                receive_frame_st(p->equipment.station, frame, p->num);
+                receive_frame_st(p->equipment.station, frame);
             }
             else if(p->type == SWITCH)
             {
@@ -148,7 +144,6 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
 
 void propagate_bpdu(struct network *net, struct scheduler *sched)
 {
-    printf("[DEBUG] propagate_bpdu appelé, nb_switchs=%zu\n", net->nb_switchs);
     bool changed = true;
     while(changed)
     {
@@ -156,11 +151,9 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
         for(int i = 0; i < (int)net->nb_switchs; i++)
         {
             struct switch_t *switch_actuel = net->switchs[i];
-            printf("[DEBUG] switch %d a %d ports\n", i, switch_actuel->nbPorts);
             for(int j = 0; j < switch_actuel->nbPorts; j++)
             {
                 struct port *pt = switch_actuel->ports[j];
-                printf("[DEBUG] port %d : pt=%p, type=%d\n", j, (void*)pt, pt ? (int)pt->type : -1);
                 if (pt && pt->type == SWITCH)
                 {
                     printf("[DEBUG] push vers switch voisin\n");
@@ -192,10 +185,6 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                             break;
                         }
                     }
-
-                    printf("[DEBUG push] switch %02X -> voisin %02X in_port trouvé=%d\n",
-       (uint8_t)switch_actuel->mac, (uint8_t)voisin->mac, in_port);
-
                     scheduler_push(sched, &new_frame, pt->type, pt->equipment, in_port);
                 }
             }
@@ -247,11 +236,6 @@ void set_ports(struct switch_t * sw)
         if(p == NULL || p->type != SWITCH){
             continue;
         }
-
-        printf("[DEBUG set_ports] switch %02X port %d num_port=%d bpdu_cost=%d received_cost=%d\n",
-       (uint8_t)sw->mac, j, sw->bpdu->num_port, 
-       sw->bpdu->cost, sw->received[j].cost);
-
 
         if(sw->mac == sw->bpdu->root)
         {

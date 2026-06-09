@@ -6,7 +6,7 @@
 #include "switch.h"
 #include "station.h"
 
-extern void receive_frame_st(struct station *st, struct eth_frame *frame, uint8_t num_port);
+extern void receive_frame_st(struct station *st, struct eth_frame *frame);
 
 void scheduler_init(struct scheduler *s){
     s->head = NULL;
@@ -71,7 +71,7 @@ int scheduler_tick(struct scheduler *s)
         }
         else
         {
-            receive_frame_st(node->dst.station, &node->frame, node->in_port);
+            receive_frame_st(node->dst.station, &node->frame);
         }
 
         free(node);

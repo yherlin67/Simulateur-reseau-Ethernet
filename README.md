@@ -11,29 +11,6 @@ ensemble de fonctions utilitaires qui permettent d'afficher nos composants princ
 ## 6 stp_running commence à true et passe à false dès que 1 SEUL SWITCH ne se met pas à jour, donc ca casse tout le protocole parce que c'est pas ca qui est censé arreter la boucle.
 
 
-// avant le tick → reset
-stp_changed = false;
-
-// dans receive_frame, si BPDU meilleur :
-if(bpdu_is_better(sw->bpdu, bpdu)) {
-    update_bpdu(sw, bpdu, num_port);
-    stp_changed = true;  // quelqu'un a changé
-}
-// si pas meilleur → on ne touche à rien, c'est normal
-
-// après scheduler_tick → on regarde
-changed = stp_changed;
-
-
-dans propagateBPDU : 
-bool changed = true;
-while(changed) {
-    stp_changed = false;        // reset avant le tick
-    // ... remplir la file ...
-    scheduler_tick(sched);
-    changed = stp_changed;      // a-t-on eu des mises à jour ?
-}
-
 ## autre soucis dans receive_frame : on met à jour le BPDU du switch quand celui qu'il recoit est moins bon que celui qu'il a lui (bpdu_is_better renvoie true si le BPDU du switch (a) est meilleure que celui recu (b)) : donc il faut changer la logique => j'ai inversé les paramètres.
 
 ## dans update BPDU il faut incrémenter du cout du port par lequel on a recu le BPDU, donc on regarde le lien entre les 2 switch, et pas avec un 1 !!!! donc on remplace 1 par sw->ports[num_port]->cost;
