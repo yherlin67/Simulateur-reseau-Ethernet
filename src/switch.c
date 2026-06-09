@@ -59,6 +59,7 @@ printf("[DEBUG] receive_frame appelé sur switch MAC=");
     if(type == IEEE802_3)
     {
         struct BPDU *bpdu = (struct BPDU *)frame->data;
+        sw->received[num_port] = *bpdu;  // on stocke toujours le BPDU recu du port voisin pour le comparer dans set_ports, parce que si on le le change pas, ca reste à UINT8_t...
 
         // calculer ce que deviendrait notre BPDU si on acceptait celui-ci
         struct BPDU candidat;
@@ -70,7 +71,6 @@ printf("[DEBUG] receive_frame appelé sur switch MAC=");
         // l'accepter seulement si c'est vraiment meilleur
         if(bpdu_is_better(&candidat, sw->bpdu))
         {
-            sw->received[num_port] = *bpdu;
             *sw->bpdu = candidat;
             stp_running = true;
         }
@@ -153,7 +153,6 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
     while(changed)
     {
         changed = false;
-        printf("[DEBUG] nouveau tick, remplissage de la file...\n");
         for(int i = 0; i < (int)net->nb_switchs; i++)
         {
             struct switch_t *switch_actuel = net->switchs[i];
@@ -193,15 +192,17 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                             break;
                         }
                     }
+
+                    printf("[DEBUG push] switch %02X -> voisin %02X in_port trouvé=%d\n",
+       (uint8_t)switch_actuel->mac, (uint8_t)voisin->mac, in_port);
+
                     scheduler_push(sched, &new_frame, pt->type, pt->equipment, in_port);
                 }
             }
         }
         stp_running = false;
-         printf("[DEBUG] file remplie, size=%d, on lance le tick\n", sched->size);
         scheduler_tick(sched);
         changed = stp_running;
-        printf("[DEBUG] après tick, changed=%d\n", changed);
     }
     search_root(net);
 }
@@ -243,11 +244,13 @@ void set_ports(struct switch_t * sw)
     for(int j = 0; j < sw->nbPorts; j++)
     {
         struct port *p = sw->ports[j];
-        if(p == NULL || p->type != SWITCH) 
+        if(p == NULL || p->type != SWITCH){
             continue;
+        }
 
-        printf("[DEBUG set_ports] switch %02X port %d num_port=%d\n",
-               (uint8_t)sw->mac, j, sw->bpdu->num_port);
+        printf("[DEBUG set_ports] switch %02X port %d num_port=%d bpdu_cost=%d received_cost=%d\n",
+       (uint8_t)sw->mac, j, sw->bpdu->num_port, 
+       sw->bpdu->cost, sw->received[j].cost);
 
 
         if(sw->mac == sw->bpdu->root)
@@ -281,10 +284,10 @@ void init_stp(struct network *net)
         sw->bpdu->num_port  = 0;
 
         for (int p = 0; p < MAX_PORTS; p++) {
-            sw->received[p].root      = UINT64_MAX;
-            sw->received[p].cost      = UINT8_MAX;
+            sw->received[p].root = UINT64_MAX;
+            sw->received[p].cost = UINT8_MAX;
             sw->received[p].bridge_id = UINT64_MAX;
-            sw->received[p].num_port  = UINT8_MAX;
+            sw->received[p].num_port = UINT8_MAX;
         }
 
         for (int p = 0; p < sw->nbPorts; p++)

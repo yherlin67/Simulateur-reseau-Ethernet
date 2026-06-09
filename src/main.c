@@ -9,7 +9,7 @@ extern void displayMenu(struct network *net);
 extern void free_network(struct network *net);
 
 int main() {
-    const char *chemin = "mylan_no_cycle.txt";
+    const char *chemin = "t_cycle.txt";
     
     struct network res;
     memset(&res, 0, sizeof(res));
