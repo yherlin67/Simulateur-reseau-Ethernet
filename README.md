@@ -17,15 +17,17 @@ Ce projet est un simulateur de réseau Ethernet écrit en langage C. Il permet d
 - Menu interactif
 
 ## Structure du projet
+
+```
 .
-├── include/        # fichiers d'en-tête (.h)   
-│   ├── station.h   
-│   ├── switch.h    
-│   ├── network.h   
+├── include/        # fichiers d'en-tête (.h)
+│   ├── station.h
+│   ├── switch.h
+│   ├── network.h
 │   ├── scheduler.h
-│   ├── menu.h 
-│   └── utils.h     
-├── src/            
+│   ├── menu.h
+│   └── utils.h
+├── src/
 │   ├── main.c
 │   ├── station.c
 │   ├── switch.c
@@ -37,6 +39,7 @@ Ce projet est un simulateur de réseau Ethernet écrit en langage C. Il permet d
 ├── build/          # fichiers objets (générés)
 ├── Makefile
 └── README.md
+```
 
 ## Compilation
 
@@ -51,13 +54,17 @@ make
 ```
 
 ## Format du fichier de configuration
+
+```
 <nb_equipements> <nb_liens>
-2;<mac>;<nb_ports>;<priorité>   # switch (type 2,)
+2;<mac>;<nb_ports>;<priorité>   # switch (type 2)
 1;<mac>;<ip>                    # station (type 1)
 <id_eq1>;<id_eq2>;<coût>        # lien
+```
 
 Exemple :
 
+```
 4 3
 2;01:45:23:a6:f7:ab;8;1024
 1;54:d6:a6:82:c5:23;130.79.80.21
@@ -66,6 +73,6 @@ Exemple :
 0;1;4
 0;2;19
 0;3;4
+```
 
 Poids des liens selon le débit : 10 Mb/s = 100, 100 Mb/s = 19, 1 Gb/s = 4.
-
