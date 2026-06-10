@@ -29,6 +29,7 @@ void displayMenu(struct network *net)
         {
             printf("\n2 - lancer le protocole stp");
         }
+        printf("\n3 - envoyer une trame");
         printf("\nq - quitter");
         printf("\n\nVotre choix : ");
 
@@ -65,7 +66,7 @@ void displayMenu(struct network *net)
                 printf("-> Lancement du protocole STP...\n\n");
                 stpLance = true;
                 
-                 struct scheduler sched;
+                struct scheduler sched;
                 scheduler_init(&sched);
                 run_stp(net, &sched);      
                 scheduler_clear(&sched);
@@ -81,6 +82,54 @@ void displayMenu(struct network *net)
                 ret = system("clear"); (void)ret;
                 userCommand = '\0';
             }
+        }
+        else if(userCommand == '3')
+        {
+            ret = system("clear"); (void)ret;
+            if(net->nb_stations <= 0)
+            {
+                printf("(Aucune station présente dans ce réseau.)\nAppuyez sur 'q' pour quitter : \n");
+                char backCommand = '\0';
+                
+                while(backCommand != 'q')
+                {
+                    if(scanf(" %c", &backCommand) != 1) break;
+                }
+                ret = system("clear"); (void)ret;
+                userCommand = '\0';
+            } 
+            else
+            {
+                char backCommand = '\0';
+                printf("(Appuyez sur 'q' pour quitter)\nÀ partir de quelle station voulez-vous envoyer ? (ex : 2) : \n");
+                
+                while(1) 
+                {
+                    if(scanf(" %c", &backCommand) != 1) break;
+                    
+                    if (backCommand == 'q') {
+                        break; 
+                    }
+                    
+                    int stationID = backCommand - '0'; 
+                    
+                    if (stationID > 0 && stationID <= net->nb_stations) {
+                        break;
+                    }
+                    printf("Entrée invalide. À partir de quelle station voulez-vous envoyer ? (ex : 2) : \n");
+                }
+                
+                if(backCommand == 'q')
+                {
+                    ret = system("clear"); (void)ret;
+                    userCommand = '\0';
+                }
+                else
+                {
+                    printf("(Appuyez sur 'q' pour quitter)\nÀ quelle station voulez-vous envoyer ? (ex : 2) : \n");
+                } 
+                userCommand = '\0';
+            } 
         }
         else if(userCommand == 'q')
         {

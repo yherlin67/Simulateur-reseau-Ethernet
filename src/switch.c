@@ -162,7 +162,7 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                 struct port *pt = switch_actuel->ports[j];
                 if (pt && pt->type == SWITCH)
                 {
-                    printf("[DEBUG] push vers switch voisin\n");
+                    // printf("[DEBUG] push vers switch voisin\n");
                     struct eth_frame new_frame;
                     memset(&new_frame, 0, sizeof(new_frame));
 
