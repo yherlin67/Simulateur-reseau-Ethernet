@@ -93,9 +93,20 @@ int ReadFile(const char *filepath, struct network *net) {
     int nb_eq = 0, nb_liens = 0;
 
     if (fgets(line, sizeof(line), f) != NULL) {
-        sscanf(line, "%d %d", &nb_eq, &nb_liens);
+        if(sscanf(line, "%d %d", &nb_eq, &nb_liens) != 2)
+        {
+            fprintf(stderr, "Erreur : première ligne mal formatée : %s\n", line);
+            fclose(f);
+            return EXIT_FAILURE;
+        }
         net->nbLiens = nb_liens;
         saved_nb_eq = nb_eq;
+    }
+    else
+    {
+        fprintf(stderr, "Erreur : lecture du fichier impossible\n");
+        fclose(f);
+        return EXIT_FAILURE;
     }
 
     void *eq_ptr[MAX_DEVICES];
@@ -118,16 +129,29 @@ int ReadFile(const char *filepath, struct network *net) {
                 int nb_ports_physiques = 0, prio = 0;
                 //"id;mac;nb_ports;priorité" — * ignore l'id, lit au max 31 caractères jusqu'au prochain ; (mac), nb_ports et priorité
                 int n = sscanf(line, "%*d;%31[^;];%d;%d", mac_s, &nb_ports_physiques, &prio);
-                //n représente le nombre de champs correctement lus
+                
+                 //n représente le nombre de champs correctement lus
                 if(n != 3)
                 {
                     fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
+                    fclose(f);
                     return EXIT_FAILURE;
                 }
                 // Vérif sur le nombre de ports
                 if(nb_ports_physiques == 0 || nb_ports_physiques > MAX_PORTS)
                 {
                     fprintf(stderr, "Erreur : nombre de ports invalide : %d\n", nb_ports_physiques);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
+                //Vérif sur l'addresse MAC
+                unsigned int m1, m2, m3, m4, m5, m6;
+                if(strlen(mac_s) != 17 || 
+                sscanf(mac_s, "%x:%x:%x:%x:%x:%x", &m1, &m2, &m3, &m4, &m5, &m6) != 6 ||
+                m1 > 255 || m2 > 255 || m3 > 255 || m4 > 255 || m5 > 255 || m6 > 255)
+                {
+                    fprintf(stderr, "Erreur : MAC invalide : %s\n", mac_s);
+                    fclose(f);
                     return EXIT_FAILURE;
                 }
 
@@ -150,15 +174,33 @@ int ReadFile(const char *filepath, struct network *net) {
             } 
             else if (type == 1) 
             { 
-                //"id;mac;ip" — ignore l'id, lit la mac (31 caractères max) jusqu'au prochain ;, et l'ip jusqu'à fin de ligne
-                int n = sscanf(line, "%*d;%31[^;];%31[^\n]", mac_s, ip_s);
+                unsigned int i1, i2, i3, i4;
+                //"id;mac;ip" — ignore l'id, lit la mac (31 caractères max) jusqu'au prochain ;, et l'ip = uint séparés par des points
+                int n = sscanf(line, "%*d;%31[^;];%u.%u.%u.%u", mac_s, &i1, &i2, &i3, &i4);
                 
                 //n représente le nombre de champs correctement lus
-                if(n != 2)
+                //On vérifie si aucun champ de l'adresse IP n'est supérieur à la valeur stockable sur un octet
+                if(n != 5 || i1 > 255 || i2 > 255 || i3 > 255 || i4 > 255)
                 {
-                    fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
+                    fprintf(stderr, "Erreur : IP invalide : %s\n", line);
+                    fclose(f);
                     return EXIT_FAILURE;
                 }
+
+                //Construction de l'adresse IP
+                snprintf(ip_s, sizeof(ip_s), "%u.%u.%u.%u", i1, i2, i3, i4);
+
+                //Vérif sur l'addresse MAC
+                unsigned int m1, m2, m3, m4, m5, m6;
+                if(strlen(mac_s) != 17 || 
+                sscanf(mac_s, "%x:%x:%x:%x:%x:%x", &m1, &m2, &m3, &m4, &m5, &m6) != 6 ||
+                m1 > 255 || m2 > 255 || m3 > 255 || m4 > 255 || m5 > 255 || m6 > 255)
+                {
+                    fprintf(stderr, "Erreur : MAC invalide : %s\n", mac_s);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
+
                 struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
 
                 //On vérif si la station a bien été créée
@@ -174,6 +216,12 @@ int ReadFile(const char *filepath, struct network *net) {
                 net->stations[net->nb_stations++] = st;
                 eq_ptr[i] = st;
                 eq_type[i] = STATION;
+            }
+            else
+            {
+                fprintf(stderr, "Erreur : Les équipements ne peuvent être que de type switch (2) ou station (1)\n");
+                fclose(f);
+                return EXIT_FAILURE;
             }
         }
     }
@@ -198,18 +246,21 @@ int ReadFile(const char *filepath, struct network *net) {
             if(n != 3)
             {
                 fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
+                fclose(f);
                 return EXIT_FAILURE;
             }
             //Vérif sur les id des machines
             if(id1 < 0 || id1 >= nb_eq || id2 < 0 || id2 >= nb_eq)
             {
                 fprintf(stderr, "Erreur : ID invalide dans lien : %d %d\n", id1, id2);
+                fclose(f);
                 return EXIT_FAILURE;
             }
             //Vérif sur le coût
             if(cost != 0 && cost != 4 && cost != 19 && cost !=100)
             {
                 fprintf(stderr, "Erreur : coût invalide dans lien : %d %d\n", id1, id2);
+                fclose(f);
                 return EXIT_FAILURE;
             }
             
