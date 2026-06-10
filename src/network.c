@@ -8,13 +8,6 @@
 #include "switch.h" 
 #include "station.h"
 
-struct raw_link {
-    enum device_type type1;
-    int true_id1;
-    enum device_type type2;
-    int true_id2;
-    int cost;
-};
 
 
 //stock les liens pour plus tard
@@ -23,11 +16,21 @@ static int saved_nb_eq = 0;
 
 static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
     struct switch_t *sw = calloc(1, sizeof(struct switch_t));
+    if(!sw) {
+        perror("calloc switch");
+        return NULL;
+    }
+
     sw->mac = mac;
     sw->priority = priority;
     sw->nbPorts = 0;
     
     sw->bpdu = calloc(1, sizeof(struct BPDU)); 
+    if(!sw->bpdu) {
+        perror("calloc bpdu");
+        free(sw);
+        return NULL;
+    }
     sw->bpdu->root = mac;
     sw->bpdu->cost = 0;
     sw->bpdu->bridge_id = mac;
@@ -39,6 +42,10 @@ static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
 
 static struct station *make_station(uint64_t mac, uint32_t ip) {
     struct station *st = calloc(1, sizeof(struct station));
+    if(!st) {
+        perror("calloc station");
+        return NULL;
+    }
     st->mac = mac;
     st->ip = ip;
     st->p = NULL;
@@ -48,6 +55,11 @@ static struct station *make_station(uint64_t mac, uint32_t ip) {
 static int add_port_to_switch(struct switch_t *sw, uint8_t cost, enum device_type ntype, void *neighbor) {
     int idx = sw->nbPorts; 
     struct port *p = calloc(1, sizeof(struct port));
+    if(!p)
+    {
+        perror("calloc port");
+        return -1;
+    }
     
     p->num = (uint8_t)idx; // idx = sw->nbPorts avant l'incrémentation = 0, 1, 2... et pour l'affichage on utilise target_id, mais que pour l'affichage...
     p->num_voisin = 0;
@@ -66,11 +78,11 @@ static int add_port_to_switch(struct switch_t *sw, uint8_t cost, enum device_typ
     return idx;
 }
 
-enum error ReadFile(const char *filepath, struct network *net) {
+int ReadFile(const char *filepath, struct network *net) {
     FILE *f = fopen(filepath, "r");
     if (!f) {
         perror(filepath);
-        return ERROR;
+        return EXIT_FAILURE;
     }
 
     net->nb_stations = 0;
@@ -110,19 +122,27 @@ enum error ReadFile(const char *filepath, struct network *net) {
                 if(n != 3)
                 {
                     fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
-                    return ERROR;
+                    return EXIT_FAILURE;
                 }
                 // Vérif sur le nombre de ports
                 if(nb_ports_physiques == 0 || nb_ports_physiques > MAX_PORTS)
                 {
                     fprintf(stderr, "Erreur : nombre de ports invalide : %d\n", nb_ports_physiques);
-                    return ERROR;
+                    return EXIT_FAILURE;
                 }
 
                 struct switch_t *sw = make_switch(convert_mac(mac_s), (uint16_t)prio);
+
                 //On vérif si le switch a bien été créé
-                if(!sw) return ERROR;
+                if(!sw) 
+                {
+                    free_network(net);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
                 eq_true_id[i] = net->nb_switchs;
+                
+                //stock PUIS incrémente : deux opérations en une ligne
                 net->switchs[net->nb_switchs++] = sw;
 
                 eq_ptr[i] = sw;
@@ -137,13 +157,20 @@ enum error ReadFile(const char *filepath, struct network *net) {
                 if(n != 2)
                 {
                     fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
-                    return ERROR;
+                    return EXIT_FAILURE;
                 }
                 struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
-                if(!st) return ERROR;
+
+                //On vérif si la station a bien été créée
+                if(!st) 
+                {
+                    free_network(net);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
+                eq_true_id[i] = net->nb_stations;
 
                 //stock PUIS incrémente : deux opérations en une ligne
-                eq_true_id[i] = net->nb_stations;
                 net->stations[net->nb_stations++] = st;
                 eq_ptr[i] = st;
                 eq_type[i] = STATION;
@@ -155,6 +182,13 @@ enum error ReadFile(const char *filepath, struct network *net) {
         free(saved_raw_links);
     }
     saved_raw_links = malloc(nb_liens * sizeof(struct raw_link));
+    if(!saved_raw_links)
+    {
+        perror("malloc saved_raw_links");
+        free_network(net);
+        fclose(f);
+        return EXIT_FAILURE;
+    }
     
     for (int i = 0; i < nb_liens; i++) {
         if (fgets(line, sizeof(line), f) != NULL) {
@@ -164,19 +198,19 @@ enum error ReadFile(const char *filepath, struct network *net) {
             if(n != 3)
             {
                 fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
-                return ERROR;
+                return EXIT_FAILURE;
             }
             //Vérif sur les id des machines
             if(id1 < 0 || id1 >= nb_eq || id2 < 0 || id2 >= nb_eq)
             {
                 fprintf(stderr, "Erreur : ID invalide dans lien : %d %d\n", id1, id2);
-                return ERROR;
+                return EXIT_FAILURE;
             }
             //Vérif sur le coût
             if(cost != 0 && cost != 4 && cost != 19 && cost !=100)
             {
                 fprintf(stderr, "Erreur : coût invalide dans lien : %d %d\n", id1, id2);
-                return ERROR;
+                return EXIT_FAILURE;
             }
             
             saved_raw_links[i].type1 = eq_type[id1];
@@ -192,10 +226,23 @@ enum error ReadFile(const char *filepath, struct network *net) {
             if (eq_type[id1] == SWITCH)
             {
                 idx1 = add_port_to_switch((struct switch_t *)eq_ptr[id1], (uint8_t)cost, eq_type[id2], eq_ptr[id2]);
+                if(idx1 == -1)
+                {
+                    free_network(net);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
             }
             else
             {
                 struct port *p_st = calloc(1, sizeof(struct port));
+                if(!p_st)
+                {
+                    perror("calloc port");
+                    free_network(net);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
                 p_st->num = 0;
                 p_st->num_voisin = 0; // sera rempli après
                 p_st->cost = (uint8_t)cost;
@@ -210,10 +257,23 @@ enum error ReadFile(const char *filepath, struct network *net) {
             if (eq_type[id2] == SWITCH)
             {
                 idx2 = add_port_to_switch((struct switch_t *)eq_ptr[id2], (uint8_t)cost, eq_type[id1], eq_ptr[id1]);
+                if(idx2 == -1)
+                {
+                    free_network(net);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
             }
             else
             {
                 struct port *p_st = calloc(1, sizeof(struct port));
+                if(!p_st)
+                {
+                    perror("calloc port");
+                    free_network(net);
+                    fclose(f);
+                    return EXIT_FAILURE;
+                }
                 p_st->num = 0;
                 p_st->num_voisin = 0; // sera rempli après
                 p_st->cost = (uint8_t)cost;
@@ -261,7 +321,7 @@ enum error ReadFile(const char *filepath, struct network *net) {
         }
     }
     fclose(f);
-    return NO_ERROR;
+    return EXIT_SUCCESS;
 }
 
 void print_network(struct network *net) {

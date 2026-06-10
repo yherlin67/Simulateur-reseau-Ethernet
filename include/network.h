@@ -22,10 +22,14 @@ enum device_type {
     SWITCH
 };
 
-enum error {
-    NO_ERROR,
-    ERROR
+struct raw_link {
+    enum device_type type1;
+    int true_id1;
+    enum device_type type2;
+    int true_id2;
+    int cost;
 };
+
 
 // union switch ou station => définie ici avec un nom de type pour pouvoir être réutilisée dans struct port ET dans struct node_frame du scheduler 
 
@@ -65,7 +69,9 @@ struct network {
     size_t nbLiens; 
 };
 
-enum error ReadFile(const char *pathFile, struct network *res);
+int ReadFile(const char *pathFile, struct network *res);
+void print_network(struct network *net);
+void free_network(struct network *net);
 
 //void read_conf(FILE * configurationFile)
 //Lit le fichier de configuration et pratique les échanges dans le réseau
