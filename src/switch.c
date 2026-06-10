@@ -101,6 +101,11 @@ void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port
 
 void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame)
 {
+    if(sw->tableCommutation[num_port] != NULL && sw->tableCommutation[num_port]->mac == frame->source)
+    {
+        return; // déjà connue sur ce port, rien à faire
+    }
+
     if(sw->tableCommutation[num_port] == NULL) {
         sw->tableCommutation[num_port] = malloc(sizeof(struct commutation_entry));
     }
@@ -115,12 +120,13 @@ void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame
 
 void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t src, struct scheduler *sched)
 {
+
     if(dest == -1)
     {
         for(int i = 0; i < sw->nbPorts; i++)
         {
             struct port *p = sw->ports[i];
-            if(p == NULL || p->status == BLOCKED || i == src)
+            if(p == NULL || p->status == BLOCKED || p->status == ROOT || i == src)
             {
                 continue;
             }
@@ -130,9 +136,13 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t 
             }
             else if(p->type == SWITCH)
             {
-                union equipment_union eq;
-                eq.switch_t = p->equipment.switch_t;
-                scheduler_push(sched, frame, SWITCH, eq, p->num_voisin);
+                if(p->equipment.switch_t == NULL)
+                {
+                    continue;
+                }
+            union equipment_union eq;
+            eq.switch_t = p->equipment.switch_t;
+            scheduler_push(sched, frame, SWITCH, eq, p->num_voisin);
             }
         }
     }

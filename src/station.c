@@ -17,8 +17,7 @@ void station_send(struct station *src, struct station *dst, const char *message,
     frame.type[1] = 0x00; 
 
     strncpy((char *)frame.data, message, sizeof(frame.data) - 1);
-
-    scheduler_push(sched, &frame, SWITCH, src->p->equipment, src->p->num_voisin);
+    
     scheduler_push(sched, &frame, SWITCH, src->p->equipment, src->p->num_voisin);
     while(sched->size > 0)
     {
