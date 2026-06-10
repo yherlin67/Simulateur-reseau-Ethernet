@@ -173,6 +173,8 @@ int ReadFile(const char *filepath, struct network *net) {
                     fclose(f);
                     return EXIT_FAILURE;
                 }
+                // pour faciliter l'affichage.
+                sw->id = net->nb_switchs + 1;
                 eq_true_id[i] = net->nb_switchs;
                 
                 //stock PUIS incrémente : deux opérations en une ligne
@@ -219,6 +221,7 @@ int ReadFile(const char *filepath, struct network *net) {
                     fclose(f);
                     return EXIT_FAILURE;
                 }
+                st->id = net->nb_stations + 1; 
                 eq_true_id[i] = net->nb_stations;
 
                 //stock PUIS incrémente : deux opérations en une ligne

@@ -19,6 +19,7 @@ struct commutation_entry {
 };
 
 struct switch_t {
+    int id;
     uint64_t mac;
     uint8_t nbPorts;
     struct port *ports[MAX_PORTS];

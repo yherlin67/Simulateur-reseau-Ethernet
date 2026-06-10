@@ -30,9 +30,7 @@ static int get_switch_id_by_mac(struct network *net, uint64_t mac) {
 
 static void print_bpdu_receive(struct switch_t *sw, struct BPDU *bpdu)
 {
-    printf("[STP] Switch ");
-    print_mac(sw->mac);
-    printf(" reçoit BPDU de ");
+    printf("[STP] Switch %d reçoit BPDU de ", sw->id);
     print_mac(bpdu->bridge_id);
     printf(" | racine proposée : ");
     print_mac(bpdu->root);
@@ -137,6 +135,20 @@ void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port
 
 void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame)
 {
+    // Chercher si la MAC existe déjà sur un autre port
+    for(int k = 0; k < MAX_PORTS; k++) {
+        if(sw->tableCommutation[k] != NULL && sw->tableCommutation[k]->mac == frame->source) {
+            if(k == num_port) {
+                return; // déjà connue sur ce port, rien à faire
+            } else {
+                // MAC connue sur un autre port, on supprime l'ancienne entrée
+                free(sw->tableCommutation[k]);
+                sw->tableCommutation[k] = NULL;
+                break;
+            }
+        }
+    }
+
     if(sw->tableCommutation[num_port] != NULL && sw->tableCommutation[num_port]->mac == frame->source)
     {
         return; // déjà connue sur ce port, rien à faire
@@ -148,9 +160,8 @@ void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame
     sw->tableCommutation[num_port]->mac = frame->source;
     sw->tableCommutation[num_port]->port = sw->ports[num_port];
 
-    printf("\nMise à jour : table de commutation\n"); 
-    print_mac(sw->mac);
-    printf(" apprend "); print_mac(frame->source);
+    printf("Switch %d apprend ", sw->id);
+    print_mac(frame->source);
     printf(" sur port %u\n", num_port);
 }
 
@@ -162,7 +173,7 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t 
         for(int i = 0; i < sw->nbPorts; i++)
         {
             struct port *p = sw->ports[i];
-            if(p == NULL || p->status == BLOCKED || p->status == ROOT || i == src)
+            if(p == NULL || p->status == BLOCKED || i == src)
             {
                 continue;
             }
@@ -172,10 +183,14 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t 
             }
             else if(p->type == SWITCH)
             {
-                if(p->equipment.switch_t == NULL)
-                {
+                if(p->equipment.switch_t == NULL){
                     continue;
                 }
+                // Vérifier que le port voisin n'est pas BLOCKED
+                if(p->equipment.switch_t->ports[p->num_voisin]->status == BLOCKED){
+                    continue;
+                }
+
             union equipment_union eq;
             eq.switch_t = p->equipment.switch_t;
             scheduler_push(sched, frame, SWITCH, eq, p->num_voisin);

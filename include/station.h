@@ -9,6 +9,7 @@
 
 
 struct station {
+    int id;
     uint32_t ip;
     uint64_t mac;
     struct port *p;
