@@ -71,9 +71,10 @@ static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, 
 void ReadFile(const char *filepath, struct network *net) {
     FILE *f = fopen(filepath, "r");
     if (!f) {
-        printf("Erreur : impossible d'ouvrir '%s'\n", filepath);
+        perror(filepath);
         return;
     }
+}
 
     net->nb_stations = 0;
     net->nb_switchs = 0;
