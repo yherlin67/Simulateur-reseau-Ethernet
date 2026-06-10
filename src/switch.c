@@ -3,8 +3,8 @@
 #include <string.h>
 #include "switch.h"
 #include "utils.h"
+#include "station.h"
 
-extern void receive_frame_st(struct station *st, struct eth_frame *frame);
 
 //Variable globale qui indique si le stp doit continuer
 static bool stp_running = false;
@@ -234,17 +234,6 @@ bool bpdu_is_better(struct BPDU *a, struct BPDU *b)
     return a->num_port < b->num_port;
 }
 
-//Plus besoin de cette fonction ?
-bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
-{
-    sw->received[num_port] = *bpdu;
-
-    sw->bpdu->root = bpdu->root;
-    sw->bpdu->cost = bpdu->cost + sw->ports[num_port]->cost;
-    sw->bpdu->bridge_id = sw->mac;
-    return true;
-}
-
 void manage_switch(struct network *net)
 {
     for(int i = 0; i < (int)net->nb_switchs; i++)
@@ -318,19 +307,19 @@ void print_stp(struct network *net)
         {
             if(net->switchs[i]->ports[p]->status == 0)
             {
-                printf("-> Port n°%d a le status : ROOT\n", net->switchs[i]->ports[p]->num);
+                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
             }
             else if(net->switchs[i]->ports[p]->status == 1)
             {
-                printf("-> Port n°%d a le status : DESIGNATED\n", net->switchs[i]->ports[p]->num);
+                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
             } 
             else if(net->switchs[i]->ports[p]->status == 2)
             {
-                printf("-> Port n°%d a le status : BLOCKED\n", net->switchs[i]->ports[p]->num);
+                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
             } 
             else if(net->switchs[i]->ports[p]->status == 3)
             {
-                printf("-> Port n°%d a le status : DEFAULT\n", net->switchs[i]->ports[p]->num);
+                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
             } 
         } 
         printf("\n");
@@ -361,7 +350,7 @@ void print_tab_commut(struct network *net, int indexSwitch)
 
     bool est_vide = true;
 
-    for(int i = 0; i < 32; i++)
+    for(int i = 0; i < MAX_PORTS; i++)
     {
         if(sw->tableCommutation[i] != NULL)
         {

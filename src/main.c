@@ -5,9 +5,6 @@
 #include "network.h"
 #include "switch.h"
 
-extern void displayMenu(struct network *net);
-extern void free_network(struct network *net);
-
 int main(int argc, char *argv[]) {
     const char *chemin;
 

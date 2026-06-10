@@ -24,13 +24,3 @@ struct BPDU {
     uint64_t bridge_id; //addresse MAC du switch qui envoie le BPDU
     uint8_t num_port; // port émetteur qui envoie le BPDU
 };
-
-//void verif_type(*t);
-//fonction pour vérifier le type de la trame (Ethernet 2 ou IEEE 802.3)
-//Cela dépends de la valeur dans le champs type. Si elle est inférieure à 1500, c'est une trame IEEE 802.3.
-//Si elle est supérieure à 1500 en revanche, c'est une trame Ethernet 2.
-//La diff entre les deux : Aujourd'hui IEEE 802.3 est quasi plus utilisé (sauf pour envoie des BPDU)
-//Dans cette trame, le champ qu'on appelle aujourd'hui "type" sur la trame Ethernet2 stockait la longueur 
-//des données inclues dans le paquet sur deux octets.
-//Le protocole utilisé se trouvait donc sur un autre champs (LLC) sur trois octets.
-//802.3 = BPDU

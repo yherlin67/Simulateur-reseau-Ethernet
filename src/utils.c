@@ -11,13 +11,7 @@ void print_ip(uint32_t ip)
 
 void print_mac(uint64_t mac){
     uint8_t octet_mask = 0xFF; 
-    printf("%02X:%02X:%02X:%02X:%02X:%02X",
-           (unsigned int)((mac >> 40) & octet_mask),
-           (unsigned int)((mac >> 32) & octet_mask),
-           (unsigned int)((mac >> 24) & octet_mask),
-           (unsigned int)((mac >> 16) & octet_mask),
-           (unsigned int)((mac >>  8) & octet_mask),
-           (unsigned int)((mac >>  0) & octet_mask));
+    printf("%02X:%02X:%02X:%02X:%02X:%02X", (unsigned int)((mac >> 40) & octet_mask), (unsigned int)((mac >> 32) & octet_mask),(unsigned int)((mac >> 24) & octet_mask), (unsigned int)((mac >> 16) & octet_mask), (unsigned int)((mac >>  8) & octet_mask), (unsigned int)((mac >>  0) & octet_mask));
 }
 
 uint32_t convert_ip(const char *ipStr) {
@@ -37,8 +31,7 @@ uint64_t convert_mac(const char *macStr) {
         return 0;
     }
 
-    return ((uint64_t)m1 << 40) | ((uint64_t)m2 << 32) | ((uint64_t)m3 << 24) | 
-           ((uint64_t)m4 << 16) | ((uint64_t)m5 << 8)  | m6;
+    return ((uint64_t)m1 << 40) | ((uint64_t)m2 << 32) | ((uint64_t)m3 << 24) | ((uint64_t)m4 << 16) | ((uint64_t)m5 << 8)  | m6;
 }
 
 void display_binary_ip(uint32_t ip) {
@@ -66,19 +59,9 @@ const char *port_status_str(enum port_status s)
 }
 
 void display_mac(uint64_t mac) {
-    printf("%02X:%02X:%02X:%02X:%02X:%02X", 
-           (unsigned int)((mac >> 40) & 0xFF),
-           (unsigned int)((mac >> 32) & 0xFF),
-           (unsigned int)((mac >> 24) & 0xFF),
-           (unsigned int)((mac >> 16) & 0xFF),
-           (unsigned int)((mac >> 8)  & 0xFF),
-           (unsigned int)(mac & 0xFF));
+    printf("%02X:%02X:%02X:%02X:%02X:%02X",(unsigned int)((mac >> 40) & 0xFF), (unsigned int)((mac >> 32) & 0xFF), (unsigned int)((mac >> 24) & 0xFF), (unsigned int)((mac >> 16) & 0xFF), (unsigned int)((mac >> 8)  & 0xFF), (unsigned int)(mac & 0xFF));
 }
 
 void display_ip(uint32_t ip) {
-    printf("%u.%u.%u.%u", 
-           (unsigned int)((ip >> 24) & 0xFF),
-           (unsigned int)((ip >> 16) & 0xFF),
-           (unsigned int)((ip >> 8)  & 0xFF),
-           (unsigned int)(ip & 0xFF));
+    printf("%u.%u.%u.%u",(unsigned int)((ip >> 24) & 0xFF), (unsigned int)((ip >> 16) & 0xFF), (unsigned int)((ip >> 8)  & 0xFF), (unsigned int)(ip & 0xFF));
 }

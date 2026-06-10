@@ -53,13 +53,6 @@ struct port {
     // l'équipement connecté sous forme de union = station ou switch
     union equipment_union equipment; // POINTEUR vers l'équipement voisin (type permet de définir lequel c'est STATION ou SWITCH)
 };
-/*
-struct link {
-   uint8_t cost;
-   struct port *portA;
-   struct port *portB;
-};
-*/
 
 struct network {
     size_t nb_stations; // nbre de stations actuellement dans le réseau (compteur pour parcourir stations[])
@@ -72,15 +65,3 @@ struct network {
 int ReadFile(const char *pathFile, struct network *res);
 void print_network(struct network *net);
 void free_network(struct network *net);
-
-//void read_conf(FILE * configurationFile)
-//Lit le fichier de configuration et pratique les échanges dans le réseau
-
-// Chargement depuis fichier de config
-//struct network *load_network(const char *path);
-//void free_network(struct network *net);
-//void print_network(struct network *net);
-
-
-//void run_STP(FILE * configurationFile)
-//Lance STP dans le réseau

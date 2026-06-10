@@ -6,7 +6,6 @@
 #include "switch.h"
 #include "station.h"
 
-extern void receive_frame_st(struct station *st, struct eth_frame *frame);
 
 void scheduler_init(struct scheduler *s){
     s->head = NULL;

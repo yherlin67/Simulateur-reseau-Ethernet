@@ -2,13 +2,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include "menu.h"
 #include "network.h"
 #include "utils.h"
 #include "switch.h"
 #include "scheduler.h"
-
-
-extern void print_network(struct network *net);
 
 void displayMenu(struct network *net) 
 {
