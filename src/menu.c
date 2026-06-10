@@ -89,7 +89,7 @@ void displayMenu(struct network *net)
                 userCommand = '\0';
             }
         }
-        else if(userCommand == '3')
+        else if(userCommand == '3' && stpIsRunning)
         {
             ret = system("clear"); (void)ret;
 

@@ -347,7 +347,7 @@ void print_tab_commut(struct network *net, int indexSwitch)
 
     // SECURITÉ 2 : Vérifier que l'index demandé est dans les limites du tableau !
     if (indexSwitch < 0 || indexSwitch >= (int)net->nb_switchs) {
-        printf("Erreur : Le switch n°%d n'existe pas (index hors limites).\n", indexSwitch + 1);
+        printf("Erreur : Le switch n°%d n'existe pas (index hors limites).\n", indexSwitch);
         return;
     }
 
