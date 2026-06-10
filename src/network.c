@@ -47,11 +47,12 @@ static struct station *make_station(uint64_t mac, uint32_t ip) {
     return st;
 }
 
-static int add_port_to_switch(struct switch_t *sw, int target_id, uint8_t cost, enum device_type ntype, void *neighbor) {
+static int add_port_to_switch(struct switch_t *sw, uint8_t cost, enum device_type ntype, void *neighbor) {
     int idx = sw->nbPorts; 
     struct port *p = calloc(1, sizeof(struct port));
     
     p->num = (uint8_t)idx; // idx = sw->nbPorts avant l'incrémentation = 0, 1, 2... et pour l'affichage on utilise target_id, mais que pour l'affichage...
+    p->num_voisin = 0;
     p->cost = cost;
     p->status = DEFAULT; 
     p->type = ntype;     
@@ -118,7 +119,9 @@ void ReadFile(const char *filepath, struct network *net) {
         }
     }
 
-    if (saved_raw_links != NULL) free(saved_raw_links);
+    if (saved_raw_links != NULL){
+        free(saved_raw_links);
+    }
     saved_raw_links = malloc(nb_liens * sizeof(struct raw_link));
     
     for (int i = 0; i < nb_liens; i++) {
@@ -130,22 +133,78 @@ void ReadFile(const char *filepath, struct network *net) {
             saved_raw_links[i].id2 = id2;
             saved_raw_links[i].cost = cout;
 
-            if (eq_type[id1] == SWITCH) {
-                add_port_to_switch((struct switch_t *)eq_ptr[id1], id2, (uint8_t)cout, eq_type[id2], eq_ptr[id2]);
-            } else if (eq_type[id1] == STATION) {
+            // idx1 et idx2 = index des ports créés de chaque côté du lien
+            int idx1 = -1, idx2 = -1;
+
+            // === CÔTÉ id1 ===
+            if (eq_type[id1] == SWITCH)
+            {
+                idx1 = add_port_to_switch((struct switch_t *)eq_ptr[id1], (uint8_t)cout, eq_type[id2], eq_ptr[id2]);
+            }
+            else
+            {
                 struct port *p_st = calloc(1, sizeof(struct port));
-                p_st->num = id2; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
+                p_st->num = 0;
+                p_st->num_voisin = 0; // sera rempli après
+                p_st->cost = (uint8_t)cout;
+                p_st->status = DEFAULT;
+                p_st->type = SWITCH;
                 p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id2];
                 ((struct station *)eq_ptr[id1])->p = p_st;
+                idx1 = 0;
             }
 
-            if (eq_type[id2] == SWITCH) {
-                add_port_to_switch((struct switch_t *)eq_ptr[id2], id1, (uint8_t)cout, eq_type[id1], eq_ptr[id1]);
-            } else if (eq_type[id2] == STATION) {
+            // CÔTÉ id2
+            if (eq_type[id2] == SWITCH)
+            {
+                idx2 = add_port_to_switch((struct switch_t *)eq_ptr[id2], (uint8_t)cout, eq_type[id1], eq_ptr[id1]);
+            }
+            else
+            {
                 struct port *p_st = calloc(1, sizeof(struct port));
-                p_st->num = id1; p_st->cost = cout; p_st->status = DEFAULT; p_st->type = SWITCH;
+                p_st->num = 0;
+                p_st->num_voisin = 0; // sera rempli après
+                p_st->cost = (uint8_t)cout;
+                p_st->status = DEFAULT;
+                p_st->type = SWITCH;
                 p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id1];
                 ((struct station *)eq_ptr[id2])->p = p_st;
+                idx2 = 0;
+            }
+
+            // RELIER LES NUM_VOISIN 
+            if (eq_type[id1] == SWITCH)
+            {
+                // on récupère le switch id1
+                struct switch_t *sw1 = (struct switch_t *)eq_ptr[id1];
+
+                // on récupère le port qu'on vient de créer sur ce switch
+                struct port *port_de_sw1 = sw1->ports[idx1];
+
+                // on lui dit que son homologue chez le voisin est à l'index idx2
+                port_de_sw1->num_voisin = (uint8_t)idx2;
+            }
+            else
+            {
+                // id1 est une station, son unique port pointe vers le port idx2 du voisin
+                struct station *st1 = (struct station *)eq_ptr[id1];
+                st1->p->num_voisin = (uint8_t)idx2;
+            }
+
+            if (eq_type[id2] == SWITCH)
+            {
+                // on récupère le switch id2
+                struct switch_t *sw2 = (struct switch_t *)eq_ptr[id2];
+                // on récupère le port qu'on vient de créer sur ce switch
+                struct port *port_de_sw2 = sw2->ports[idx2];
+                // on lui dit que son homologue chez le voisin est à l'index idx1
+                port_de_sw2->num_voisin = (uint8_t)idx1;
+            }
+            else
+            {
+                // id2 est une station, son unique port pointe vers le port idx1 du voisin
+                struct station *st2 = (struct station *)eq_ptr[id2];
+                st2->p->num_voisin = (uint8_t)idx1;
             }
         }
     }

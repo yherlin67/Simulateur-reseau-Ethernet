@@ -178,20 +178,7 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                     new_frame.type[1] = sizeof(struct BPDU);
                     memcpy(new_frame.data, &bpdu_to_send, sizeof(struct BPDU));
 
-                    // on cherche le port destinataire du switch voisin pour le scheduler :
-                    struct switch_t *voisin = pt->equipment.switch_t;
-                    uint8_t in_port = 0;
-                    for(int k = 0; k < voisin->nbPorts; k++)
-                    {
-                        if(voisin->ports[k] &&
-                        voisin->ports[k]->type == SWITCH &&
-                        voisin->ports[k]->equipment.switch_t == switch_actuel)
-                        {
-                            in_port = k;
-                            break;
-                        }
-                    }
-                    scheduler_push(sched, &new_frame, pt->type, pt->equipment, in_port);
+                    scheduler_push(sched, &new_frame, pt->type, pt->equipment, pt->num_voisin);
                 }
             }
         }

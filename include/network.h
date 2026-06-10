@@ -36,6 +36,7 @@ struct port {
     //Un port en attribut d'une station est forcément connecté à cette station et un des deux autres appareils dans l'union
     //Il n'y a plus besoin de struct lien, cost represente le cout pour atteindre le port
     uint8_t num; // INDICE du port dans le tableau de ports ports[] du switch qui le possède.
+    uint8_t num_voisin; // indice du port qui est lié à ce port sur le switch voisin
     uint8_t cost;
     enum port_status status; // état du port pour STP
    // enum port_role role;

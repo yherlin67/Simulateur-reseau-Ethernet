@@ -18,20 +18,7 @@ void station_send(struct station *src, struct station *dst, const char *message,
 
     strncpy((char *)frame.data, message, sizeof(frame.data) - 1);
 
-     struct switch_t *sw = src->p->equipment.switch_t;
-    uint8_t in_port = 0;
-    for(int k = 0; k < sw->nbPorts; k++)
-    {
-        if(sw->ports[k] &&
-           sw->ports[k]->type == STATION &&
-           sw->ports[k]->equipment.station == src)
-        {
-            in_port = k;
-            break;
-        }
-    }
-
-    scheduler_push(sched, &frame, SWITCH, src->p->equipment, in_port);
+    scheduler_push(sched, &frame, SWITCH, src->p->equipment, src->p->num_voisin);
     scheduler_tick(sched);
 }
 
