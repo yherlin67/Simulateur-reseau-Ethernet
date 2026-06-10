@@ -16,10 +16,6 @@ struct raw_link {
     int cost;
 };
 
-enum error {
-    NO_ERROR,
-    ERROR
-};
 
 //stock les liens pour plus tard
 static struct raw_link *saved_raw_links = NULL;
@@ -70,11 +66,11 @@ static int add_port_to_switch(struct switch_t *sw, uint8_t cost, enum device_typ
     return idx;
 }
 
-void ReadFile(const char *filepath, struct network *net) {
+enum error ReadFile(const char *filepath, struct network *net) {
     FILE *f = fopen(filepath, "r");
     if (!f) {
         perror(filepath);
-        return;
+        return ERROR;
     }
 
     net->nb_stations = 0;
@@ -117,9 +113,9 @@ void ReadFile(const char *filepath, struct network *net) {
                     return ERROR;
                 }
                 // Vérif sur le nombre de ports
-                if(nb_ports == 0 || nb_ports > MAX_PORTS)
+                if(nb_ports_physiques == 0 || nb_ports_physiques > MAX_PORTS)
                 {
-                    fprintf(stderr, "Erreur : nombre de ports invalide : %d\n", nb_ports);
+                    fprintf(stderr, "Erreur : nombre de ports invalide : %d\n", nb_ports_physiques);
                     return ERROR;
                 }
 
@@ -145,8 +141,6 @@ void ReadFile(const char *filepath, struct network *net) {
                 }
                 struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
                 if(!st) return ERROR;
-
-                struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
 
                 //stock PUIS incrémente : deux opérations en une ligne
                 eq_true_id[i] = net->nb_stations;
@@ -179,7 +173,7 @@ void ReadFile(const char *filepath, struct network *net) {
                 return ERROR;
             }
             //Vérif sur le coût
-            if(cost != 4 && cost != 19 && cost !=100)
+            if(cost != 0 && cost != 4 && cost != 19 && cost !=100)
             {
                 fprintf(stderr, "Erreur : coût invalide dans lien : %d %d\n", id1, id2);
                 return ERROR;
@@ -189,7 +183,7 @@ void ReadFile(const char *filepath, struct network *net) {
             saved_raw_links[i].true_id1 = eq_true_id[id1];
             saved_raw_links[i].type2 = eq_type[id2];
             saved_raw_links[i].true_id2 = eq_true_id[id2];
-            saved_raw_links[i].cost = cout;
+            saved_raw_links[i].cost = cost;
 
             // idx1 et idx2 = index des ports créés de chaque côté du lien
             int idx1 = -1, idx2 = -1;
