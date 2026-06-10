@@ -1,0 +1,14 @@
+# Fichiers compilés
+bin/
+build/
+
+# VSCode
+.vscode/
+
+# Fichiers objets et dépendances
+*.o
+*.d
+
+# Fichiers temporaires
+*.swp
+*~
