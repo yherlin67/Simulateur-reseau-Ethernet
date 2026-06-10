@@ -269,7 +269,7 @@ int ReadFile(const char *filepath, struct network *net) {
                 return EXIT_FAILURE;
             }
             //Vérif sur le coût
-            if(cost != 0 && cost != 4 && cost != 19 && cost !=100)
+            if(cost != 4 && cost != 19 && cost !=100)
             {
                 fprintf(stderr, "Erreur : coût invalide dans lien : %d %d\n", id1, id2);
                 fclose(f);
