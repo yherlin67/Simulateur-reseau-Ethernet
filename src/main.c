@@ -23,7 +23,13 @@ int main(int argc, char *argv[]) {
     memset(&res, 0, sizeof(res));
 
     // 1. On charge le réseau
-    ReadFile(chemin, &res);
+    // n = 1 s'il y a une erreur, n = 0 si tout s'est bien passé
+    int n = ReadFile(chemin, &res);
+    if(n == 1)
+    {
+        return 1;
+    }
+
 
     // 2. On lance le menu en lui donnant accès au réseau chargé
     displayMenu(&res);

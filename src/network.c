@@ -14,6 +14,11 @@ struct raw_link {
     int cost;
 };
 
+enum error {
+    NO_ERROR,
+    ERROR
+};
+
 //stock les liens pour plus tard
 static struct raw_link *saved_raw_links = NULL;
 static int saved_nb_eq = 0;
@@ -100,18 +105,52 @@ void ReadFile(const char *filepath, struct network *net) {
             
             char mac_s[32] = {0}, ip_s[32] = {0};
 
-            if (type == 2) { 
+            if (type == 2) 
+            { 
+
                 int nb_ports_physiques = 0, prio = 0;
                 //"id;mac;nb_ports;priorité" — * ignore l'id, lit au max 31 caractères jusqu'au prochain ; (mac), nb_ports et priorité
-                sscanf(line, "%*d;%31[^;];%d;%d", mac_s, &nb_ports_physiques, &prio);
+                int n = sscanf(line, "%*d;%31[^;];%d;%d", mac_s, &nb_ports_physiques, &prio);
+                //n représente le nombre de champs correctement lus
+                if(n != 3)
+                {
+                    fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
+                    return ERROR;
+                }
+                // Vérif sur le nombre de ports
+                if(nb_ports == 0 || nb_ports > MAX_PORTS)
+                {
+                    fprintf(stderr, "Erreur : nombre de ports invalide : %d\n", nb_ports);
+                    return ERROR;
+                }
+
                 struct switch_t *sw = make_switch(convert_mac(mac_s), (uint16_t)prio);
+                //On vérif si le switch a bien été créé
+                if(!sw) return ERROR;
+
+                //stock PUIS incrémente : deux opérations en une ligne
                 net->switchs[net->nb_switchs++] = sw;
+
                 eq_ptr[i] = sw;
                 eq_type[i] = SWITCH;
-            } else if (type == 1) { 
+            } 
+            else if (type == 1) 
+            { 
                 //"id;mac;ip" — ignore l'id, lit la mac (31 caractères max) jusqu'au prochain ;, et l'ip jusqu'à fin de ligne
-                sscanf(line, "%*d;%31[^;];%31[^\n]", mac_s, ip_s);
+                int n = sscanf(line, "%*d;%31[^;];%31[^\n]", mac_s, ip_s);
+                
+                //n représente le nombre de champs correctement lus
+                if(n != 2)
+                {
+                    fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
+                    return ERROR;
+                }
                 struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
+                if(!st) return ERROR;
+
+                struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
+
+                //stock PUIS incrémente : deux opérations en une ligne
                 net->stations[net->nb_stations++] = st;
                 eq_ptr[i] = st;
                 eq_type[i] = STATION;
@@ -126,12 +165,30 @@ void ReadFile(const char *filepath, struct network *net) {
     
     for (int i = 0; i < nb_liens; i++) {
         if (fgets(line, sizeof(line), f) != NULL) {
-            int id1 = 0, id2 = 0, cout = 0;
-            sscanf(line, "%d;%d;%d", &id1, &id2, &cout);
+            int id1 = 0, id2 = 0, cost = 0;
+
+            int n = sscanf(line, "%d;%d;%d", &id1, &id2, &cost);
+            if(n != 3)
+            {
+                fprintf(stderr, "Erreur : ligne mal formatée : %s\n", line);
+                return ERROR;
+            }
+            //Vérif sur les id des machines
+            if(id1 < 0 || id1 >= nb_eq || id2 < 0 || id2 >= nb_eq)
+            {
+                fprintf(stderr, "Erreur : ID invalide dans lien : %d %d\n", id1, id2);
+                return ERROR;
+            }
+            //Vérif sur le coût
+            if(cost != 4 && cost != 19 && cost !=100)
+            {
+                fprintf(stderr, "Erreur : coût invalide dans lien : %d %d\n", id1, id2);
+                return ERROR;
+            }
             
             saved_raw_links[i].id1 = id1;
             saved_raw_links[i].id2 = id2;
-            saved_raw_links[i].cost = cout;
+            saved_raw_links[i].cost = cost;
 
             // idx1 et idx2 = index des ports créés de chaque côté du lien
             int idx1 = -1, idx2 = -1;
@@ -139,14 +196,14 @@ void ReadFile(const char *filepath, struct network *net) {
             // === CÔTÉ id1 ===
             if (eq_type[id1] == SWITCH)
             {
-                idx1 = add_port_to_switch((struct switch_t *)eq_ptr[id1], (uint8_t)cout, eq_type[id2], eq_ptr[id2]);
+                idx1 = add_port_to_switch((struct switch_t *)eq_ptr[id1], (uint8_t)cost, eq_type[id2], eq_ptr[id2]);
             }
             else
             {
                 struct port *p_st = calloc(1, sizeof(struct port));
                 p_st->num = 0;
                 p_st->num_voisin = 0; // sera rempli après
-                p_st->cost = (uint8_t)cout;
+                p_st->cost = (uint8_t)cost;
                 p_st->status = DEFAULT;
                 p_st->type = SWITCH;
                 p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id2];
@@ -157,14 +214,14 @@ void ReadFile(const char *filepath, struct network *net) {
             // CÔTÉ id2
             if (eq_type[id2] == SWITCH)
             {
-                idx2 = add_port_to_switch((struct switch_t *)eq_ptr[id2], (uint8_t)cout, eq_type[id1], eq_ptr[id1]);
+                idx2 = add_port_to_switch((struct switch_t *)eq_ptr[id2], (uint8_t)cost, eq_type[id1], eq_ptr[id1]);
             }
             else
             {
                 struct port *p_st = calloc(1, sizeof(struct port));
                 p_st->num = 0;
                 p_st->num_voisin = 0; // sera rempli après
-                p_st->cost = (uint8_t)cout;
+                p_st->cost = (uint8_t)cost;
                 p_st->status = DEFAULT;
                 p_st->type = SWITCH;
                 p_st->equipment.switch_t = (struct switch_t *)eq_ptr[id1];
@@ -209,6 +266,7 @@ void ReadFile(const char *filepath, struct network *net) {
         }
     }
     fclose(f);
+    return NO_ERROR;
 }
 
 void print_network(struct network *net) {
@@ -246,7 +304,7 @@ void print_network(struct network *net) {
     if (saved_raw_links != NULL) {
         printf("================= LIENS =================\n");
         for (size_t i = 0; i < net->nbLiens; i++) {
-            printf("Lien n°%zu : Equipement %d <---> Equipement %d (Cout: %d)\n", i + 1, saved_raw_links[i].id1, saved_raw_links[i].id2, saved_raw_links[i].cost);
+            printf("Lien n°%zu : Equipement %d <---> Equipement %d (cost: %d)\n", i + 1, saved_raw_links[i].id1, saved_raw_links[i].id2, saved_raw_links[i].cost);
         }
     }
 }
