@@ -372,16 +372,16 @@ void print_tab_commut(struct network *net, int indexSwitch)
 
     if(est_vide)
     {
-        printf("La table de commutation du switch n°%d est vide.\n", indexSwitch);
+        printf("La table de commutation du switch n°%d est vide.\n", indexSwitch+1);
     }
     else
     {
-        printf("--- Table de commutation du Switch n°%d ---\n", indexSwitch);
+        printf("--- Table de commutation du Switch n°%d ---\n", indexSwitch+1);
         for(int i = 0; i < 32; i++)
         {
             if(sw->tableCommutation[i] != NULL)
             {
-                printf("Port local %d -> MAC: ", i);
+                printf("Port local %d -> MAC: ", i+1);
                 display_mac(sw->tableCommutation[i]->mac); 
                 printf("\n");
             }
