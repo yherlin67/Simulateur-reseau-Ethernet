@@ -122,13 +122,14 @@ void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port
         }
     }
 
+    update_table(sw, num_port, frame); // toujours mettre à jour
+
     if(port_dest != -1)
     {
         send_to(frame, sw, (int8_t)port_dest, num_port, sched);
     }
     else
     {
-        update_table(sw, num_port, frame);
         send_to(frame, sw, -1, num_port, sched);
     }
 }

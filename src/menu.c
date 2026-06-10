@@ -24,13 +24,13 @@ void displayMenu(struct network *net)
         if(stpIsRunning)
         {
             printf("\n2 - Enlever le protocole stp");
-            printf("\n3 - Envoyer une trame");
-            printf("\n4 - Afficher une table de commutation");
+            printf("\n3 - Afficher une table de commutation");
+            printf("\n4 - Envoyer une trame");
         }
         else
         {
             printf("\n2 - Lancer le protocole stp");
-            printf("\n4 - Afficher table de commutation");
+            printf("\n3 - Afficher table de commutation");
         }
         printf("\nq - Quitter");
         printf("\n\nVotre choix : ");
@@ -90,7 +90,41 @@ void displayMenu(struct network *net)
             ret = system("clear"); (void)ret;
             userCommand = '\0';
         }
-        else if(userCommand == '3' && stpIsRunning)
+        else if(userCommand == '3')
+        {
+             char continueAction = 'a';
+            
+            while (continueAction == 'a')
+            {
+                int switchChoice = 0;
+                while((size_t)switchChoice > net->nb_switchs || switchChoice < 1)
+                {
+                    ret = system("clear"); (void)ret;
+                    printf("Nombre de switchs présents dans le réseau : %ld\n", net->nb_switchs);
+                    printf("Quelle table de quel switch voulez-vous voir ? (1 à %ld) : ", net->nb_switchs);
+
+                    if(scanf("%d", &switchChoice) != 1) {
+                        while(getchar() != '\n');
+                    }
+                } 
+                
+                ret = system("clear"); (void)ret;
+                printf("-> Affichage de la table de commutation...\n\n");
+
+                print_tab_commut(net, switchChoice - 1); 
+                
+                printf("\nTapez 'a' pour visualiser une autre table, ou 'q' pour quitter : ");
+                while(1) 
+                {
+                    if (scanf(" %c", &continueAction) != 1) continue;
+                    if (continueAction == 'a' || continueAction == 'q') break;
+                    printf("Erreur : commande non reconnue. Tapez 'a' ou 'q' : ");
+                }
+            }
+            ret = system("clear"); (void)ret;
+            userCommand = '\0';
+        }
+        else if(userCommand == '4' && stpIsRunning)
         {
             char continueAction = 'a';
             
@@ -164,40 +198,6 @@ void displayMenu(struct network *net)
                         if(continueAction == 'a' || continueAction == 'q') break;
                         printf("Erreur : commande non reconnue. Tapez 'a' ou 'q' : ");
                     }
-                }
-            }
-            ret = system("clear"); (void)ret;
-            userCommand = '\0';
-        }
-        else if(userCommand == '4')
-        {
-            char continueAction = 'a';
-            
-            while (continueAction == 'a')
-            {
-                int switchChoice = 0;
-                while((size_t)switchChoice > net->nb_switchs || switchChoice < 1)
-                {
-                    ret = system("clear"); (void)ret;
-                    printf("Nombre de switchs présents dans le réseau : %ld\n", net->nb_switchs);
-                    printf("Quelle table de quel switch voulez-vous voir ? (1 à %ld) : ", net->nb_switchs);
-
-                    if(scanf("%d", &switchChoice) != 1) {
-                        while(getchar() != '\n');
-                    }
-                } 
-                
-                ret = system("clear"); (void)ret;
-                printf("-> Affichage de la table de commutation...\n\n");
-
-                print_tab_commut(net, switchChoice - 1); 
-                
-                printf("\nTapez 'a' pour visualiser une autre table, ou 'q' pour quitter : ");
-                while(1) 
-                {
-                    if (scanf(" %c", &continueAction) != 1) continue;
-                    if (continueAction == 'a' || continueAction == 'q') break;
-                    printf("Erreur : commande non reconnue. Tapez 'a' ou 'q' : ");
                 }
             }
             ret = system("clear"); (void)ret;
