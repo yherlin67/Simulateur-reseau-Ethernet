@@ -9,8 +9,10 @@
 #include "station.h"
 
 struct raw_link {
-    int id1;
-    int id2;
+    enum device_type type1;
+    int true_id1;
+    enum device_type type2;
+    int true_id2;
     int cost;
 };
 
@@ -23,16 +25,12 @@ enum error {
 static struct raw_link *saved_raw_links = NULL;
 static int saved_nb_eq = 0;
 
-//Constructeur pour créer un switch
 static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
-    //Alloue un switch dans la mémoire et met l'espace mémoire à 0
     struct switch_t *sw = calloc(1, sizeof(struct switch_t));
     sw->mac = mac;
     sw->priority = priority;
-    //Pas besoin vu qu'on a déjà calloc à 0 mais bon c'est plus clair
     sw->nbPorts = 0;
     
-    // allocation du BPDU pour effectuer le spanning tree pour la première fois.
     sw->bpdu = calloc(1, sizeof(struct BPDU)); 
     sw->bpdu->root = mac;
     sw->bpdu->cost = 0;
@@ -43,7 +41,6 @@ static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
     return sw;
 }
 
-//Constructeur pour créer une station
 static struct station *make_station(uint64_t mac, uint32_t ip) {
     struct station *st = calloc(1, sizeof(struct station));
     st->mac = mac;
@@ -62,7 +59,6 @@ static int add_port_to_switch(struct switch_t *sw, uint8_t cost, enum device_typ
     p->status = DEFAULT; 
     p->type = ntype;     
     
-    // Correction de l'accès aux champs de l'union
     if (ntype == SWITCH) {
         p->equipment.switch_t = (struct switch_t *)neighbor; 
     } else {
@@ -96,7 +92,10 @@ void ReadFile(const char *filepath, struct network *net) {
 
     void *eq_ptr[MAX_DEVICES];
     enum device_type eq_type[MAX_DEVICES];
+    int eq_true_id[MAX_DEVICES];
+    
     memset(eq_ptr, 0, sizeof(eq_ptr));
+    memset(eq_true_id, 0, sizeof(eq_true_id));
 
     for (int i = 0; i < nb_eq; i++) {
         if (fgets(line, sizeof(line), f) != NULL) {
@@ -127,8 +126,7 @@ void ReadFile(const char *filepath, struct network *net) {
                 struct switch_t *sw = make_switch(convert_mac(mac_s), (uint16_t)prio);
                 //On vérif si le switch a bien été créé
                 if(!sw) return ERROR;
-
-                //stock PUIS incrémente : deux opérations en une ligne
+                eq_true_id[i] = net->nb_switchs;
                 net->switchs[net->nb_switchs++] = sw;
 
                 eq_ptr[i] = sw;
@@ -151,6 +149,7 @@ void ReadFile(const char *filepath, struct network *net) {
                 struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
 
                 //stock PUIS incrémente : deux opérations en une ligne
+                eq_true_id[i] = net->nb_stations;
                 net->stations[net->nb_stations++] = st;
                 eq_ptr[i] = st;
                 eq_type[i] = STATION;
@@ -186,9 +185,11 @@ void ReadFile(const char *filepath, struct network *net) {
                 return ERROR;
             }
             
-            saved_raw_links[i].id1 = id1;
-            saved_raw_links[i].id2 = id2;
-            saved_raw_links[i].cost = cost;
+            saved_raw_links[i].type1 = eq_type[id1];
+            saved_raw_links[i].true_id1 = eq_true_id[id1];
+            saved_raw_links[i].type2 = eq_type[id2];
+            saved_raw_links[i].true_id2 = eq_true_id[id2];
+            saved_raw_links[i].cost = cout;
 
             // idx1 et idx2 = index des ports créés de chaque côté du lien
             int idx1 = -1, idx2 = -1;
@@ -273,30 +274,72 @@ void print_network(struct network *net) {
     if (net == NULL) return;
 
     printf("================ EN-TÊTE ================\n");
-    printf("Nombre d'equipements attendus : %d\n", saved_nb_eq);
-    printf("Nombre de liens attendus : %zu\n\n", net->nbLiens);
+    printf("Nombre d'equipements : %d\n", saved_nb_eq);
+    printf("Nombre de liens : %zu\n\n", net->nbLiens);
 
     printf("============== ÉQUIPEMENTS ==============\n");
+    
     for (size_t i = 0; i < net->nb_switchs; i++) {
         struct switch_t *sw = net->switchs[i];
-        printf("[ID %zu] SWITCH  -> MAC : ", i);
+        printf("SWITCH N°%zu -> MAC : ", i+1);
         display_mac(sw->mac);
         printf(" | Ports connectés: %d | Priorite: %d\n", sw->nbPorts, sw->priority);
+        
         for(int p = 0; p < sw->nbPorts; p++) {
             if(sw->ports[p] != NULL) {
-                printf("             -> Connecté à ID %d (coût: %d)\n", sw->ports[p]->num, sw->ports[p]->cost);
+                if (sw->ports[p]->type == SWITCH) {
+                    int true_switch_id = -1;
+                    for (size_t s = 0; s < net->nb_switchs; s++) {
+                        if (net->switchs[s] == sw->ports[p]->equipment.switch_t) {
+                            true_switch_id = (int)s + 1;
+                            break;
+                        }
+                    }
+                    printf("           -> Connecté au switch %d (coût: %d)\n", true_switch_id, sw->ports[p]->cost);
+                } 
+                else if (sw->ports[p]->type == STATION) {
+                    int true_station_id = -1;
+                    for (size_t s = 0; s < net->nb_stations; s++) {
+                        if (net->stations[s] == sw->ports[p]->equipment.station) {
+                            true_station_id = (int)s + 1;
+                            break;
+                        }
+                    }
+                    printf("           -> Connecté à la station %d (coût: %d)\n", true_station_id, sw->ports[p]->cost);
+                }
             }
         }
         printf("\n");
     }
+    
     for (size_t i = 0; i < net->nb_stations; i++) {
         struct station *st = net->stations[i];
-        printf("STATION -> MAC : ");
+        printf("STATION N°%zu -> MAC : ", i+1);
         display_mac(st->mac);
-        printf("\n        -> IP  : ");
+        printf("\n             -> IP  : ");
         display_ip(st->ip);
+        
         if(st->p != NULL) {
-            printf("\n        -> Connectée à ID %d (coût: %d)", st->p->num, st->p->cost);
+            if (st->p->type == SWITCH) {
+                int true_switch_id = -1;
+                for (size_t s = 0; s < net->nb_switchs; s++) {
+                    if (net->switchs[s] == st->p->equipment.switch_t) {
+                        true_switch_id = (int)s + 1;
+                        break;
+                    }
+                }
+                printf("\n             -> Connectée au switch %d (coût: %d)", true_switch_id, st->p->cost);
+            } 
+            else {
+                int true_station_id = -1;
+                for (size_t s = 0; s < net->nb_stations; s++) {
+                    if (net->stations[s] == st->p->equipment.station) {
+                        true_station_id = (int)s + 1;
+                        break;
+                    }
+                }
+                printf("\n             -> Connectée à la station %d (coût: %d)", true_station_id, st->p->cost);
+            }
         }
         printf("\n\n");
     }
@@ -304,8 +347,24 @@ void print_network(struct network *net) {
     if (saved_raw_links != NULL) {
         printf("================= LIENS =================\n");
         for (size_t i = 0; i < net->nbLiens; i++) {
-            printf("Lien n°%zu : Equipement %d <---> Equipement %d (cost: %d)\n", i + 1, saved_raw_links[i].id1, saved_raw_links[i].id2, saved_raw_links[i].cost);
-        }
+            printf("Lien n°%zu : ", i + 1);
+            
+            if (saved_raw_links[i].type1 == SWITCH) {
+                printf("Switch %d", saved_raw_links[i].true_id1 + 1);
+            } else {
+                printf("Station %d", saved_raw_links[i].true_id1 + 1);
+            }
+
+            printf(" <---> ");
+
+            if (saved_raw_links[i].type2 == SWITCH) {
+                printf("Switch %d", saved_raw_links[i].true_id2 + 1);
+            } else {
+                printf("Station %d", saved_raw_links[i].true_id2 + 1);
+            }
+
+            printf(" (Cout: %d)\n", saved_raw_links[i].cost);
+        }  
     }
 }
 
@@ -318,7 +377,6 @@ void free_network(struct network *net) {
             if (sw->ports[p] != NULL) free(sw->ports[p]);
         }
         
-        // Libération de la mémoire oubliée
         if (sw->bpdu != NULL) free(sw->bpdu);
         for(int j = 0; j < 32; j++) {
             if(sw->tableCommutation[j] != NULL) free(sw->tableCommutation[j]);

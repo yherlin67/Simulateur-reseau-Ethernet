@@ -13,15 +13,15 @@ extern void print_network(struct network *net);
 void displayMenu(struct network *net) 
 {
     char userCommand = '\0';
-    bool stpLance = false;
+    bool stpIsRunning = false;
     int ret; // Pour stocker les retours de system() et annuler les warnings
-
+    ret = system("clear"); (void)ret;
     while(userCommand != 'q')
     {
         printf("\n--- MENU ---\n");
         printf("\n1 - afficher le réseau");
         
-        if(stpLance)
+        if(stpIsRunning)
         {
             printf("\n2 - enlever le protocole stp");
         }
@@ -54,17 +54,17 @@ void displayMenu(struct network *net)
         else if(userCommand == '2')
         {
             ret = system("clear"); (void)ret;
-            if(stpLance)
+            if(stpIsRunning)
             {
                 printf("-> Arrêt du protocole STP...\n");
-                stpLance = false;
+                stpIsRunning = false;
 
                 disable_stp(net);
             }
             else
             {
                 printf("-> Lancement du protocole STP...\n\n");
-                stpLance = true;
+                stpIsRunning = true;
                 
                 struct scheduler sched;
                 scheduler_init(&sched);
@@ -86,9 +86,9 @@ void displayMenu(struct network *net)
         else if(userCommand == '3')
         {
             ret = system("clear"); (void)ret;
-            if(net->nb_stations <= 0)
+            if(net->nb_stations == 0)
             {
-                printf("(Aucune station présente dans ce réseau.)\nAppuyez sur 'q' pour quitter : \n");
+                printf("Aucune station présente dans ce réseau.\n\nAppuyez sur 'q' pour quitter : ");
                 char backCommand = '\0';
                 
                 while(backCommand != 'q')
