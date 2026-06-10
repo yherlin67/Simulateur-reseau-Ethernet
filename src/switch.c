@@ -6,6 +6,7 @@
 
 extern void receive_frame_st(struct station *st, struct eth_frame *frame);
 
+//Variable globale qui indique si le stp doit continuer
 static bool stp_running = false;
 
 void disable_stp(struct network *net)
@@ -55,9 +56,12 @@ void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_por
     if(type == IEEE802_3)
     {
         struct BPDU *bpdu = (struct BPDU *)frame->data;
-        sw->received[num_port] = *bpdu;  // on stocke toujours le BPDU recu du port voisin pour le comparer dans set_ports, parce que si on le le change pas, ca reste à UINT8_t...
+        sw->received[num_port] = *bpdu;  
+        //on stocke toujours le BPDU recu du port voisin pour le comparer dans set_ports, 
+        //parce que si on le le change pas, ca reste à UINT8_t...
 
-        // calculer ce que deviendrait notre BPDU si on acceptait celui-ci
+        // (Attention : on compare pas direct le bpdu stocké dans received car c'est celui du voisin !)
+        // calculer ce que deviendrait NOTRE BPDU si on acceptait celui du voisin
         struct BPDU candidat;
         candidat.root = bpdu->root;
         candidat.cost = bpdu->cost + sw->ports[num_port]->cost;
@@ -70,6 +74,8 @@ void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_por
             *sw->bpdu = candidat;
             stp_running = true;
         }
+        //Si on entre jamais dans la condition ci-dessus, 
+        //aucun switch ne mets à jour son BPDU stp_running reste à false et on arrête le stp
     }
     else if(type == ETHERNET_II)
     {
@@ -191,9 +197,11 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
         }
         stp_running = false;
         scheduler_tick(sched);
+        //Si le stp continue après le tick, on continue la propagation de BPDU (on reboucle)
         changed = stp_running;
     }
-    search_root(net);
+    //On va gérer chaque switch du réseau pour assigner le bon statut à leurs ports
+    manage_switch(net);
 }
 
 bool bpdu_is_better(struct BPDU *a, struct BPDU *b)
@@ -210,6 +218,7 @@ bool bpdu_is_better(struct BPDU *a, struct BPDU *b)
     return a->num_port < b->num_port;
 }
 
+//Plus besoin de cette fonction ?
 bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
 {
     sw->received[num_port] = *bpdu;
@@ -220,7 +229,7 @@ bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port)
     return true;
 }
 
-void search_root(struct network *net)
+void manage_switch(struct network *net)
 {
     for(int i = 0; i < (int)net->nb_switchs; i++)
         {
@@ -239,7 +248,7 @@ void set_ports(struct switch_t * sw)
 
         if(sw->mac == sw->bpdu->root)
         {
-            // si le switch est la racine alors TOUS CES PORTS SONT DESIGNATED
+            // si le switch est la racine alors TOUS SES PORTS SONT DESIGNATED
             p->status = DESIGNATED;
         }
         else if(j == sw->bpdu->num_port)
@@ -252,6 +261,7 @@ void set_ports(struct switch_t * sw)
         }
         else
         {
+            //J'ia recu un meilleur BPDU sur ce port, je bloque le port, il y a un meilleur chemin vers la racine !
             p->status = BLOCKED;
         }
     }

@@ -8,8 +8,16 @@
 extern void displayMenu(struct network *net);
 extern void free_network(struct network *net);
 
-int main() {
-    const char *chemin = "t_cycle.txt";
+int main(int argc, char *argv[]) {
+    const char *chemin;
+
+    if(argc < 2)
+    {
+        printf("Usage: ./bin/network <fichier>\n");
+        return 1;
+    }
+    
+    chemin = argv[1];
     
     struct network res;
     memset(&res, 0, sizeof(res));

@@ -38,7 +38,7 @@ void propagate_bpdu(struct network *net, struct scheduler *sched);
 void disable_stp(struct network *net);
 bool bpdu_is_better(struct BPDU *a, struct BPDU *b);
 bool update_bpdu(struct switch_t *sw, struct BPDU *bpdu, uint8_t num_port);
-void search_root(struct network *net);
+void manage_switch(struct network *net);
 void set_ports(struct switch_t * sw);
 void init_stp(struct network *net);
 void print_stp(struct network *net);

@@ -14,13 +14,17 @@ struct raw_link {
     int cost;
 };
 
+//stock les liens pour plus tard
 static struct raw_link *saved_raw_links = NULL;
 static int saved_nb_eq = 0;
 
+//Constructeur pour créer un switch
 static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
+    //Alloue un switch dans la mémoire et met l'espace mémoire à 0
     struct switch_t *sw = calloc(1, sizeof(struct switch_t));
     sw->mac = mac;
     sw->priority = priority;
+    //Pas besoin vu qu'on a déjà calloc à 0 mais bon c'est plus clair
     sw->nbPorts = 0;
     
     // allocation du BPDU pour effectuer le spanning tree pour la première fois.
@@ -34,6 +38,7 @@ static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
     return sw;
 }
 
+//Constructeur pour créer une station
 static struct station *make_station(uint64_t mac, uint32_t ip) {
     struct station *st = calloc(1, sizeof(struct station));
     st->mac = mac;
@@ -96,12 +101,14 @@ void ReadFile(const char *filepath, struct network *net) {
 
             if (type == 2) { 
                 int nb_ports_physiques = 0, prio = 0;
+                //"id;mac;nb_ports;priorité" — * ignore l'id, lit au max 31 caractères jusqu'au prochain ; (mac), nb_ports et priorité
                 sscanf(line, "%*d;%31[^;];%d;%d", mac_s, &nb_ports_physiques, &prio);
                 struct switch_t *sw = make_switch(convert_mac(mac_s), (uint16_t)prio);
                 net->switchs[net->nb_switchs++] = sw;
                 eq_ptr[i] = sw;
                 eq_type[i] = SWITCH;
             } else if (type == 1) { 
+                //"id;mac;ip" — ignore l'id, lit la mac (31 caractères max) jusqu'au prochain ;, et l'ip jusqu'à fin de ligne
                 sscanf(line, "%*d;%31[^;];%31[^\n]", mac_s, ip_s);
                 struct station *st = make_station(convert_mac(mac_s), convert_ip(ip_s));
                 net->stations[net->nb_stations++] = st;
