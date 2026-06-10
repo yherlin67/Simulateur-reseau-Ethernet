@@ -387,11 +387,11 @@ int ReadFile(const char *filepath, struct network *net) {
 void print_network(struct network *net) {
     if (net == NULL) return;
 
-    printf("================ EN-TÊTE ================\n");
+    printf("================ EN-TÊTE ================\n\n");
     printf("Nombre d'equipements : %d\n", saved_nb_eq);
     printf("Nombre de liens : %zu\n\n", net->nbLiens);
 
-    printf("============== ÉQUIPEMENTS ==============\n");
+    printf("============== ÉQUIPEMENTS ==============\n\n");
     
     for (size_t i = 0; i < net->nb_switchs; i++) {
         struct switch_t *sw = net->switchs[i];
@@ -459,7 +459,7 @@ void print_network(struct network *net) {
     }
 
     if (saved_raw_links != NULL) {
-        printf("================= LIENS =================\n");
+        printf("================= LIENS =================\n\n");
         for (size_t i = 0; i < net->nbLiens; i++) {
             printf("Lien n°%zu : ", i + 1);
             
