@@ -4,6 +4,7 @@
 #include <string.h>
 #include "network.h"
 #include "switch.h"
+#include "menu.h"
 
 int main(int argc, char *argv[]) {
     const char *chemin;

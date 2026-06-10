@@ -14,25 +14,25 @@ void displayMenu(struct network *net)
     bool stpIsRunning = false;
     int ret;
     
-    ret = system("clear"); (void)ret;
+   ret = system("clear"); (void)ret;
     
     while(userCommand != 'q')
     {
-        printf("\n--- MENU ---\n");
-        printf("\n1 - afficher le réseau");
+        printf("\n================== MENU ==================\n");
+        printf("\n1 - Afficher le réseau");
         
         if(stpIsRunning)
         {
-            printf("\n2 - enlever le protocole stp");
-            printf("\n3 - envoyer une trame");
-            printf("\n4 - afficher table de commutation");
+            printf("\n2 - Enlever le protocole stp");
+            printf("\n3 - Envoyer une trame");
+            printf("\n4 - Afficher une table de commutation");
         }
         else
         {
-            printf("\n2 - lancer le protocole stp");
-            printf("\n4 - afficher table de commutation");
+            printf("\n2 - Lancer le protocole stp");
+            printf("\n4 - Afficher table de commutation");
         }
-        printf("\nq - quitter");
+        printf("\nq - Quitter");
         printf("\n\nVotre choix : ");
 
         if (scanf(" %c", &userCommand) != 1) {

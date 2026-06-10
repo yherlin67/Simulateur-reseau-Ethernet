@@ -9,6 +9,37 @@
 //Variable globale qui indique si le stp doit continuer
 static bool stp_running = false;
 
+// fonction pour donner l'id d'une station (+1) pour l'affichage, pour que l'utilisateur puisse voir l'échange de BPDU...
+static int get_switch_id(struct network *net, struct switch_t *sw) {
+    for (int i = 0; i < (int)net->nb_switchs; i++) {
+        if (net->switchs[i] == sw){
+            return i + 1;
+        }
+    }
+    return -1;
+}
+
+static int get_switch_id_by_mac(struct network *net, uint64_t mac) {
+    for (int i = 0; i < (int)net->nb_switchs; i++) {
+        if (net->switchs[i]->mac == mac){
+            return i + 1;
+        }
+    }
+    return -1;
+}
+
+static void print_bpdu_receive(struct switch_t *sw, struct BPDU *bpdu)
+{
+    printf("[STP] Switch ");
+    print_mac(sw->mac);
+    printf(" reçoit BPDU de ");
+    print_mac(bpdu->bridge_id);
+    printf(" | racine proposée : ");
+    print_mac(bpdu->root);
+    printf(" | coût : %d\n", bpdu->cost);
+}
+
+
 void disable_stp(struct network *net)
 {
     for (int i = 0; i < (int)net->nb_switchs; i++)
@@ -18,8 +49,9 @@ void disable_stp(struct network *net)
         sw->visited = false;
 
         for (int p = 0; p < sw->nbPorts; p++)
-            if (sw->ports[p])
+            if (sw->ports[p]){
                 sw->ports[p]->status = DEFAULT;
+            }
 
         sw->bpdu->root = sw->mac;
         sw->bpdu->cost = 0;
@@ -56,6 +88,10 @@ void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_por
     if(type == IEEE802_3)
     {
         struct BPDU *bpdu = (struct BPDU *)frame->data;
+
+        // Affichage pour l'utilisateur...
+        print_bpdu_receive(sw, bpdu);
+
         sw->received[num_port] = *bpdu;
 
         struct BPDU candidat;
@@ -112,7 +148,7 @@ void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame
     sw->tableCommutation[num_port]->mac = frame->source;
     sw->tableCommutation[num_port]->port = sw->ports[num_port];
 
-    printf("MISE A JOUR D'UNE TABLE DE COMMUTATION\n"); 
+    printf("\nMise à jour : table de commutation\n"); 
     print_mac(sw->mac);
     printf(" apprend "); print_mac(frame->source);
     printf(" sur port %u\n", num_port);
@@ -168,8 +204,13 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t 
 void propagate_bpdu(struct network *net, struct scheduler *sched)
 {
     bool changed = true;
+    int tick = 1;
+    printf("\n================ ÉCHANGE DE BPDU ================\n");
+
     while(changed)
     {
+        printf("\n---------------- TICK n° %d ----------------\n\n", tick++);
+        printf("-> Phase 1 : envoi des BPDU\n\n");
         changed = false;
         for(int i = 0; i < (int)net->nb_switchs; i++)
         {
@@ -179,7 +220,6 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                 struct port *pt = switch_actuel->ports[j];
                 if (pt && pt->type == SWITCH)
                 {
-                    // printf("[DEBUG] push vers switch voisin\n");
                     struct eth_frame new_frame;
                     memset(&new_frame, 0, sizeof(new_frame));
 
@@ -194,18 +234,27 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
                     new_frame.type[0] = 0x00; 
                     new_frame.type[1] = sizeof(struct BPDU);
                     memcpy(new_frame.data, &bpdu_to_send, sizeof(struct BPDU));
+                    
+                    printf("[STP] Switch %d envoie BPDU | racine : Switch %d | coût : %d\n",
+                        get_switch_id(net, switch_actuel),
+                        get_switch_id_by_mac(net, switch_actuel->bpdu->root),
+                        switch_actuel->bpdu->cost);
 
                     scheduler_push(sched, &new_frame, pt->type, pt->equipment, pt->num_voisin);
                 }
             }
         }
+        printf("\n-> Phase 2 : réception des BPDU\n\n");
         stp_running = false;
         scheduler_tick(sched);
+        printf("\n-> FIN du tick n°%d\n", tick);
+
         //Si le stp continue après le tick, on continue la propagation de BPDU (on reboucle)
         changed = stp_running;
     }
     //On va gérer chaque switch du réseau pour assigner le bon statut à leurs ports
     manage_switch(net);
+    printf("\n================ FIN DE L'ÉCHANGE ================\n");
 }
 
 bool bpdu_is_better(struct BPDU *a, struct BPDU *b)
@@ -237,9 +286,9 @@ bool bpdu_is_better(struct BPDU *a, struct BPDU *b)
 void manage_switch(struct network *net)
 {
     for(int i = 0; i < (int)net->nb_switchs; i++)
-        {
-            set_ports(net->switchs[i]);
-        } 
+    {
+        set_ports(net->switchs[i]);
+    } 
 }
 
 void set_ports(struct switch_t * sw)
@@ -300,30 +349,30 @@ void init_stp(struct network *net)
 
 void print_stp(struct network *net)
 {
+    // Trouver la racine
+    int root_id = -1;
+    for(int i = 0; i < (int)net->nb_switchs; i++) {
+        if(net->switchs[i]->mac == net->switchs[i]->bpdu->root) {
+            root_id = i + 1;
+            break;
+        }
+    }
+
+    printf("\n\n================ RÉSULTAT STP ================\n\n");
+    printf("Switch racine : Switch %d\n\n", root_id);
+
     for(int i = 0; i < (int)net->nb_switchs; i++)
     {
-        printf("Switch [ID n°%d]\n",i);
+        printf("Switch n°%d\n", i+1);
         for(int p = 0; p < net->switchs[i]->nbPorts; p++)
         {
-            if(net->switchs[i]->ports[p]->status == 0)
-            {
-                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
-            }
-            else if(net->switchs[i]->ports[p]->status == 1)
-            {
-                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
-            } 
-            else if(net->switchs[i]->ports[p]->status == 2)
-            {
-                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
-            } 
-            else if(net->switchs[i]->ports[p]->status == 3)
-            {
-                printf("-> Port n°%d a le status : %s\n", net->switchs[i]->ports[p]->num, port_status_str(net->switchs[i]->ports[p]->status));
-            } 
-        } 
+            printf("-> Port n°%d a le status : %s\n",
+                net->switchs[i]->ports[p]->num,
+                port_status_str(net->switchs[i]->ports[p]->status));
+        }
         printf("\n");
-    } 
+    }
+    printf("\n=============================================\n");
 }
 
 void print_tab_commut(struct network *net, int indexSwitch)
@@ -366,13 +415,19 @@ void print_tab_commut(struct network *net, int indexSwitch)
     else
     {
         printf("--- Table de commutation du Switch n°%d ---\n", indexSwitch+1);
-        for(int i = 0; i < 32; i++)
+        for(int i = 0; i < MAX_PORTS; i++)
         {
             if(sw->tableCommutation[i] != NULL)
             {
-                printf("Port local %d -> MAC: ", i+1);
-                display_mac(sw->tableCommutation[i]->mac); 
-                printf("\n");
+                int true_station_id = get_station_id_by_mac(net, sw->tableCommutation[i]->mac);
+
+                if (true_station_id != -1) {
+                    printf("Port local %d -> Station %d\n", i+1, true_station_id);
+                } else {
+                    printf("Port local %d -> MAC inconnue : ", i+1);
+                    display_mac(sw->tableCommutation[i]->mac);
+                    printf("\n");
+                }
             }
         }
     }

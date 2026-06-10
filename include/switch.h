@@ -47,14 +47,3 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t 
 void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port, struct scheduler *sched);
 void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port, struct scheduler *sched);
 
-//void receive_frame(struct eth_frame frame);
-//Recoit une trame et mets à jour la table de commutation, puis transmets
-//Affiche un message du type: table mise à jour !
-
-//void receive_BPDU(struct BPDU bpdu)
-//Recoit un vecteur BPDU, mets à jour le sien
-//Affiche un message du type: vecteur reçu !
-
-//void send_BPDU(struct BPDU bpdu)
-//Envoie le vecteur BPDU du switch
-//Affiche un message du type: vecteur envoye !

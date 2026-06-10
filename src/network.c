@@ -10,9 +10,18 @@
 
 
 
-//stock les liens pour plus tard
+//stocke les liens pour plus tard
 static struct raw_link *saved_raw_links = NULL;
 static int saved_nb_eq = 0;
+
+// pour l'affichage dans switch.c (pour avoir le numéro de la station et pas afficher la MAC)
+int get_station_id_by_mac(struct network *net, uint64_t mac)
+{
+    for (size_t s = 0; s < net->nb_stations; s++) {
+        if (net->stations[s]->mac == mac) return (int)s + 1;
+    }
+    return -1;
+}
 
 static struct switch_t *make_switch(uint64_t mac, uint16_t priority) {
     struct switch_t *sw = calloc(1, sizeof(struct switch_t));

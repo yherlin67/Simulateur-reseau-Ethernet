@@ -53,11 +53,5 @@ int scheduler_tick(struct scheduler *s);
 // Vide la file et libère toute la mémoire (noeuds)
 void scheduler_clear(struct scheduler *s);
  
-//Collecte les trames que les stations veulent envoyer et les ajoute dans la file => A FAIRE DANS LE MENU.
-//void scheduler_collect(struct scheduler *s, struct network *net);
-
- 
-//Lance la simulation complète jusqu'à ce que la file soit vide => A FAIRE DANS LE MENU
-//void scheduler_run(struct scheduler *s, struct network *net);
 
  

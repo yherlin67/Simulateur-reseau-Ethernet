@@ -32,7 +32,7 @@ void receive_frame_st(struct station *st, struct eth_frame *frame)
         return;
     }
 
-    printf("Station "); print_mac(st->mac);
+    printf("\nStation "); print_mac(st->mac);
     printf(" reçoit de "); print_mac(frame->source);
     printf(" : \"%s\"\n", (char *)frame->data);
 }

@@ -65,3 +65,4 @@ struct network {
 int ReadFile(const char *pathFile, struct network *res);
 void print_network(struct network *net);
 void free_network(struct network *net);
+int get_station_id_by_mac(struct network *net, uint64_t mac);
