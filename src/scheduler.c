@@ -67,7 +67,7 @@ int scheduler_tick(struct scheduler *s)
 
         if (node->dst_type == SWITCH)
         {
-            receive_frame(node->dst.switch_t, &node->frame, node->in_port);
+            receive_frame(node->dst.switch_t, &node->frame, node->in_port, s);
         }
         else
         {

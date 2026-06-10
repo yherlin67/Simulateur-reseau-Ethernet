@@ -33,7 +33,9 @@ void displayMenu(struct network *net)
         printf("\nq - quitter");
         printf("\n\nVotre choix : ");
 
-        if (scanf(" %c", &userCommand) != 1) continue; 
+        if (scanf(" %c", &userCommand) != 1){
+            continue;
+        }
         
         if(userCommand == '1')
         {
@@ -46,7 +48,9 @@ void displayMenu(struct network *net)
             printf("\nAppuyez sur 'q' pour quitter l'affichage : ");
             while(backCommand != 'q')
             {
-                if (scanf(" %c", &backCommand) != 1) break;
+                if (scanf(" %c", &backCommand) != 1){
+                    break;
+                }
             }
             ret = system("clear"); (void)ret;
             userCommand = '\0';
@@ -86,50 +90,75 @@ void displayMenu(struct network *net)
         else if(userCommand == '3')
         {
             ret = system("clear"); (void)ret;
+
             if(net->nb_stations == 0)
             {
-                printf("Aucune station présente dans ce réseau.\n\nAppuyez sur 'q' pour quitter : ");
-                char backCommand = '\0';
-                
-                while(backCommand != 'q')
-                {
-                    if(scanf(" %c", &backCommand) != 1) break;
-                }
-                ret = system("clear"); (void)ret;
-                userCommand = '\0';
-            } 
+                printf("Aucune station présente dans ce réseau.\n");
+            }
             else
             {
-                char backCommand = '\0';
-                printf("(Appuyez sur 'q' pour quitter)\nÀ partir de quelle station voulez-vous envoyer ? (ex : 2) : \n");
-                
-                while(1) 
+                // afficher les stations disponibles
+                printf("Stations disponibles :\n");
+                for(size_t k = 0; k < net->nb_stations; k++)
                 {
-                    if(scanf(" %c", &backCommand) != 1) break;
-                    
-                    if (backCommand == 'q') {
-                        break; 
-                    }
-                    
-                    int stationID = backCommand - '0'; 
-                    
-                    if (stationID > 0 && stationID <= net->nb_stations) {
-                        break;
-                    }
-                    printf("Entrée invalide. À partir de quelle station voulez-vous envoyer ? (ex : 2) : \n");
+                    printf("  [%zu] ", k);
+                    print_mac(net->stations[k]->mac);
+                    printf(" | IP : ");
+                    print_ip(net->stations[k]->ip);
+                    printf("\n");
                 }
-                
-                if(backCommand == 'q')
+
+                // demander la source
+                int src_idx = -1;
+                printf("\nIndice de la station source : ");
+                if(scanf("%d", &src_idx) != 1)
                 {
-                    ret = system("clear"); (void)ret;
-                    userCommand = '\0';
+                    src_idx = -1;
+                }
+
+                // demander la destination
+                int dst_idx = -1;
+                printf("Indice de la station destination : ");
+                if(scanf("%d", &dst_idx) != 1)
+                {
+                    dst_idx = -1;
+                }
+
+                // vérifier les indices
+                if(src_idx < 0 || (size_t)src_idx >= net->nb_stations ||
+                dst_idx < 0 || (size_t)dst_idx >= net->nb_stations)
+                {
+                    printf("Indice invalide.\n");
+                }
+                else if(net->stations[src_idx]->p == NULL)
+                {
+                    printf("La station source n'est pas connectée à un switch.\n");
                 }
                 else
                 {
-                    printf("(Appuyez sur 'q' pour quitter)\nÀ quelle station voulez-vous envoyer ? (ex : 2) : \n");
-                } 
-                userCommand = '\0';
-            } 
+                    // demander le message
+                    char message[256] = {0};
+                    printf("Message : ");
+                    if(scanf(" %255[^\n]", message) != 1)
+                    {
+                        message[0] = '\0';
+                    }
+                    // envoyer la trame
+                    struct scheduler sched;
+                    scheduler_init(&sched);
+                    station_send(net->stations[src_idx], net->stations[dst_idx], message, &sched);
+                    scheduler_clear(&sched);
+                }
+            }
+
+            char backCommand = '\0';
+            printf("\nAppuyez sur 'q' pour quitter : ");
+            while(backCommand != 'q')
+            {
+                if(scanf(" %c", &backCommand) != 1) break;
+            }
+            ret = system("clear"); (void)ret;
+            userCommand = '\0';
         }
         else if(userCommand == 'q')
         {

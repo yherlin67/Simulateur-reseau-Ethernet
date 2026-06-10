@@ -24,16 +24,13 @@ struct switch_t {
     struct port *ports[MAX_PORTS];
     uint16_t priority;
     struct commutation_entry *tableCommutation[32];
-    struct BPDU *bpdu;  // c'est ce qu'on envoie.
+    struct BPDU *bpdu;  // c'est ce qu'on envoie et c'est le final du switch quand tout s'est bien passé.
     struct BPDU received[MAX_PORTS];     // meilleur BPDU reçu sur chaque port (c'est ce qu'on recoit)
     bool visited;
 };
 
 enum frame_type determine_type(struct eth_frame);
 void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame);
-void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port);
-void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port);
-void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port);
 void propagate_bpdu(struct network *net, struct scheduler *sched);
 void disable_stp(struct network *net);
 bool bpdu_is_better(struct BPDU *a, struct BPDU *b);
@@ -43,6 +40,11 @@ void set_ports(struct switch_t * sw);
 void init_stp(struct network *net);
 void print_stp(struct network *net);
 void run_stp(struct network *net, struct scheduler *sched);
+
+
+void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t src, struct scheduler *sched);
+void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port, struct scheduler *sched);
+void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port, struct scheduler *sched);
 
 //void receive_frame(struct eth_frame frame);
 //Recoit une trame et mets à jour la table de commutation, puis transmets

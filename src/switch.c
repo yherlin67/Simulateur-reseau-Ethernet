@@ -49,51 +49,53 @@ enum frame_type determine_type(struct eth_frame frame)
     return ETHERNET_II;
 }
 
-void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port)
+void receive_frame(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port, struct scheduler *sched)
 {
     enum frame_type type = determine_type(*frame);
 
     if(type == IEEE802_3)
     {
         struct BPDU *bpdu = (struct BPDU *)frame->data;
-        sw->received[num_port] = *bpdu;  
-        //on stocke toujours le BPDU recu du port voisin pour le comparer dans set_ports, 
-        //parce que si on le le change pas, ca reste à UINT8_t...
+        sw->received[num_port] = *bpdu;
 
-        // (Attention : on compare pas direct le bpdu stocké dans received car c'est celui du voisin !)
-        // calculer ce que deviendrait NOTRE BPDU si on acceptait celui du voisin
         struct BPDU candidat;
         candidat.root = bpdu->root;
         candidat.cost = bpdu->cost + sw->ports[num_port]->cost;
         candidat.bridge_id = sw->mac;
         candidat.num_port = num_port;
 
-        // l'accepter seulement si c'est vraiment meilleur
         if(bpdu_is_better(&candidat, sw->bpdu))
         {
             *sw->bpdu = candidat;
             stp_running = true;
         }
-        //Si on entre jamais dans la condition ci-dessus, 
-        //aucun switch ne mets à jour son BPDU stp_running reste à false et on arrête le stp
     }
     else if(type == ETHERNET_II)
     {
-        know_station(sw, frame, num_port);
+        know_station(sw, frame, num_port, sched);
     }
 }
 
-void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port)
+void know_station(struct switch_t *sw, struct eth_frame *frame, uint8_t num_port, struct scheduler *sched)
 {
-    if(sw->tableCommutation[num_port] && sw->tableCommutation[num_port]->mac == frame->destination)
+    int port_dest = -1;
+    for(int k = 0; k < MAX_PORTS; k++)
     {
-        uint8_t num_stat = sw->tableCommutation[num_port]->port->num; 
-        send_to(frame, sw, num_stat); 
+        if(sw->tableCommutation[k] && sw->tableCommutation[k]->mac == frame->destination)
+        {
+            port_dest = sw->tableCommutation[k]->port->num;
+            break;
+        }
+    }
+
+    if(port_dest != -1)
+    {
+        send_to(frame, sw, (int8_t)port_dest, num_port, sched);
     }
     else
     {
         update_table(sw, num_port, frame);
-        send_to(frame, sw, -1);
+        send_to(frame, sw, -1, num_port, sched);
     }
 }
 
@@ -111,14 +113,14 @@ void update_table(struct switch_t *sw, uint8_t num_port, struct eth_frame *frame
     printf(" sur port %u\n", num_port);
 }
 
-void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
+void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t dest, uint8_t src, struct scheduler *sched)
 {
-    if(num_port == -1)
+    if(dest == -1)
     {
         for(int i = 0; i < sw->nbPorts; i++)
         {
             struct port *p = sw->ports[i];
-            if(p == NULL || p->status == BLOCKED)
+            if(p == NULL || p->status == BLOCKED || i == src)
             {
                 continue;
             }
@@ -128,21 +130,26 @@ void send_to(struct eth_frame *frame, struct switch_t *sw, int8_t num_port)
             }
             else if(p->type == SWITCH)
             {
-                receive_frame(p->equipment.switch_t, frame, p->num);
+                union equipment_union eq;
+                eq.switch_t = p->equipment.switch_t;
+                scheduler_push(sched, frame, SWITCH, eq, p->num_voisin);
             }
         }
     }
     else
     {
-        struct port *p = sw->ports[num_port];
-        if(p != NULL) {
+        struct port *p = sw->ports[dest];
+        if(p != NULL)
+        {
             if(p->type == STATION)
             {
                 receive_frame_st(p->equipment.station, frame);
             }
             else if(p->type == SWITCH)
             {
-                receive_frame(p->equipment.switch_t, frame, p->num);
+                union equipment_union eq;
+                eq.switch_t = p->equipment.switch_t;
+                scheduler_push(sched, frame, SWITCH, eq, p->num_voisin);
             }
         }
     }
@@ -193,14 +200,26 @@ void propagate_bpdu(struct network *net, struct scheduler *sched)
 
 bool bpdu_is_better(struct BPDU *a, struct BPDU *b)
 {
-    if(a->root < b->root) return true;
-    if(a->root > b->root) return false;
+    if(a->root < b->root){
+        return true;
+    }
+    if(a->root > b->root){
+        return false;
+    }
 
-    if(a->cost < b->cost) return true;
-    if(a->cost > b->cost) return false;
+    if(a->cost < b->cost){
+        return true;
+    }
+    if(a->cost > b->cost){
+        return false;
+    }
 
-    if(a->bridge_id < b->bridge_id) return true;
-    if(a->bridge_id > b->bridge_id) return false;
+    if(a->bridge_id < b->bridge_id){
+        return true;
+    }
+    if(a->bridge_id > b->bridge_id){
+        return false;
+    }
 
     return a->num_port < b->num_port;
 }
