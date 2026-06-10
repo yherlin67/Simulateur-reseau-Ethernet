@@ -27,7 +27,7 @@ Ce projet est un simulateur de réseau Ethernet écrit en langage C. Il permet d
 │   ├── scheduler.h
 │   ├── menu.h
 │   └── utils.h
-├── src/
+├── src/           # fichiers source (.c)
 │   ├── main.c
 │   ├── station.c
 │   ├── switch.c
