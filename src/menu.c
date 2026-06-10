@@ -24,12 +24,14 @@ void displayMenu(struct network *net)
         if(stpIsRunning)
         {
             printf("\n2 - enlever le protocole stp");
+            printf("\n3 - envoyer une trame");
+            printf("\n4 - afficher table de commutation");
         }
         else
         {
             printf("\n2 - lancer le protocole stp");
+            printf("\n4 - afficher table de commutation");
         }
-        printf("\n3 - envoyer une trame");
         printf("\nq - quitter");
         printf("\n\nVotre choix : ");
 
@@ -156,6 +158,32 @@ void displayMenu(struct network *net)
             while(backCommand != 'q')
             {
                 if(scanf(" %c", &backCommand) != 1) break;
+            }
+            ret = system("clear"); (void)ret;
+            userCommand = '\0';
+        }
+        if(userCommand == '4')
+        {
+            int backCommand = 0;
+            while((size_t)backCommand > net->nb_switchs || (size_t)backCommand < 1)
+            {
+                ret = system("clear"); (void)ret;
+                printf("Quel table de quel switch voulez-vous voir ? (Switch n° ? ) : ");
+
+                scanf("%d", &backCommand);
+            } 
+            char backcharCommand = '\0';
+            ret = system("clear"); (void)ret;
+            printf("-> Affichage de la table de commutation...\n\n");
+
+            print_tab_commut(net, backCommand);
+            
+            printf("\nAppuyez sur 'q' pour quitter l'affichage : ");
+            while(backcharCommand != 'q')
+            {
+                if (scanf(" %c", &backcharCommand) != 1){
+                    break;
+                }
             }
             ret = system("clear"); (void)ret;
             userCommand = '\0';

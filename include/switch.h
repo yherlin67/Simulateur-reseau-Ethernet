@@ -39,6 +39,7 @@ void manage_switch(struct network *net);
 void set_ports(struct switch_t * sw);
 void init_stp(struct network *net);
 void print_stp(struct network *net);
+void print_tab_commut(struct network *net, int indexSwitch);
 void run_stp(struct network *net, struct scheduler *sched);
 
 

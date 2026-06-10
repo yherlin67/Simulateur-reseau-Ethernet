@@ -336,3 +336,55 @@ void print_stp(struct network *net)
         printf("\n");
     } 
 }
+
+void print_tab_commut(struct network *net, int indexSwitch)
+{
+    // SECURITÉ 1 : Vérifier que le réseau existe
+    if (net == NULL) {
+        printf("Erreur : Le réseau n'est pas initialisé.\n");
+        return;
+    }
+
+    // SECURITÉ 2 : Vérifier que l'index demandé est dans les limites du tableau !
+    if (indexSwitch < 0 || indexSwitch >= (int)net->nb_switchs) {
+        printf("Erreur : Le switch n°%d n'existe pas (index hors limites).\n", indexSwitch + 1);
+        return;
+    }
+
+    struct switch_t *sw = net->switchs[indexSwitch];
+
+    // SECURITÉ 3 : Vérifier que la structure du switch n'est pas NULL
+    if (sw == NULL) {
+        printf("Erreur : Le switch demandé est introuvable en mémoire.\n");
+        return;
+    }
+
+    bool est_vide = true;
+
+    for(int i = 0; i < 32; i++)
+    {
+        if(sw->tableCommutation[i] != NULL)
+        {
+            est_vide = false;
+            break; // Dès qu'on trouve une entrée, inutile de continuer, la table n'est pas vide
+        }
+    }
+
+    if(est_vide)
+    {
+        printf("La table de commutation du switch n°%d est vide.\n", indexSwitch);
+    }
+    else
+    {
+        printf("--- Table de commutation du Switch n°%d ---\n", indexSwitch);
+        for(int i = 0; i < 32; i++)
+        {
+            if(sw->tableCommutation[i] != NULL)
+            {
+                printf("Port local %d -> MAC: ", i);
+                display_mac(sw->tableCommutation[i]->mac); 
+                printf("\n");
+            }
+        }
+    }
+}
