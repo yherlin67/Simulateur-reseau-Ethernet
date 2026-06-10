@@ -74,7 +74,6 @@ void ReadFile(const char *filepath, struct network *net) {
         perror(filepath);
         return;
     }
-}
 
     net->nb_stations = 0;
     net->nb_switchs = 0;
