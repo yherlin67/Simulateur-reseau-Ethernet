@@ -1,10 +1,12 @@
 # Simulateur de réseau Ethernet
 
-Projet réalisé en trinôme, dans le cadre de notre première année de BUT informatique.
+Projet réalisé en trinôme, dans le cadre de ma première année de BUT informatique.
 
-## Description
+## Présentation
 
-Ce projet est un simulateur de réseau Ethernet écrit en langage C. Il permet de modéliser un réseau composé de stations et de switchs afin d'y envoyer des trames Ethernet et d'y exécuter le protocole Spanning Tree.
+Ce projet est un simulateur de réseau Ethernet écrit en langage C. 
+
+Il permet de modéliser un réseau composé de stations et de switchs afin d'y envoyer des trames Ethernet et d'y exécuter le protocole Spanning Tree.
 
 ## Fonctionnalités
 
@@ -15,6 +17,13 @@ Ce projet est un simulateur de réseau Ethernet écrit en langage C. Il permet d
 - Distinction Ethernet II / IEEE 802.3
 - Échange de BPDU entre switchs jusqu'à convergence et attribution des rôles des ports (protocole STP)
 - Menu interactif
+
+## Captures d'écran
+
+<img width="1694" height="438" alt="image" src="https://github.com/user-attachments/assets/a3265369-2394-4687-8166-8fafa462ebfd" />
+<img width="1694" height="1207" alt="image" src="https://github.com/user-attachments/assets/b7392151-bc20-4219-a7d3-1955385d7394" />
+<img width="1694" height="1207" alt="image" src="https://github.com/user-attachments/assets/f7a9f9ed-c1dd-4018-a580-532ac2407fa1" />
+
 
 ## Structure du projet
 
@@ -41,18 +50,6 @@ Ce projet est un simulateur de réseau Ethernet écrit en langage C. Il permet d
 └── README.md
 ```
 
-## Compilation
-
-```bash
-make
-```
-
-## Utilisation
-
-```bash
-./bin/network <fichier_config>
-```
-
 ## Format du fichier de configuration
 
 ```
@@ -76,3 +73,19 @@ Exemple :
 ```
 
 Poids des liens selon le débit : 10 Mb/s = 100, 100 Mb/s = 19, 1 Gb/s = 4.
+
+## Installation
+
+1. Cloner le dépôt :
+```bash
+   git clone https://github.com/yherlin67/Simulateur-reseau-Ethernet.git
+```
+2. Complier :
+```bash
+make
+```
+
+3. Exécuter :
+```bash
+./bin/network <fichier_config>
+```
